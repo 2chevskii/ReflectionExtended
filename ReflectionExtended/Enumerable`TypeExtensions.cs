@@ -79,5 +79,43 @@ namespace ReflectionExtended
         {
             return AllAreAssignableTo(self, typeof(T));
         }
+
+        public static IEnumerable<Type> WithAttribute(
+            this IEnumerable<Type> self,
+            Type attributeType,
+            bool ignoreInheritance = false,
+            bool exactAttributeType = false
+        )
+        {
+            return self.Where(
+                t => t.HasAttribute(attributeType, ignoreInheritance, exactAttributeType)
+            );
+        }
+
+        public static IEnumerable<Type> WithAttribute<TAttribute>(
+            this IEnumerable<Type> self,
+            bool ignoreInheritance = false,
+            bool exactAttributeType = false
+        ) where TAttribute : Attribute
+        {
+            return self.WithAttribute(typeof(TAttribute), ignoreInheritance, exactAttributeType);
+        }
+
+        public static IEnumerable<Type> WithAttributeOnSelf(
+            this IEnumerable<Type> self,
+            Type attributeType,
+            bool exactAttributeType = false
+        )
+        {
+            return self.Where(t => t.HasAttributeOnSelf(attributeType, exactAttributeType));
+        }
+
+        public static IEnumerable<Type> WithAttributeOnSelf<TAttribute>(
+            this IEnumerable<Type> self,
+            bool exactAttributeType = false
+        )where TAttribute:Attribute
+        {
+            return self.WithAttributeOnSelf(typeof(TAttribute), exactAttributeType);
+        }
     }
 }

@@ -9,4 +9,9 @@
         <!-- Allow usage of pattern matching in netstandard2.0 target -->
         <LangVersion>9</LangVersion>
     </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net5.0'">
+    <Nullable>false</Nullable>
+    <ImplicitUsings>false</ImplicitUsings>
+  </PropertyGroup>
 </Project>

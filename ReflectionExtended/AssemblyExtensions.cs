@@ -98,8 +98,8 @@ namespace ReflectionExtended
 
         public static IEnumerable<Type> GetInterfaces(
             this Assembly self,
-            bool includeNonPublic=false,
-            bool includeNested=false
+            bool includeNonPublic = false,
+            bool includeNested = false
         )
         {
             Type[] types;
@@ -136,6 +136,50 @@ namespace ReflectionExtended
             }
 
             return list;
+        }
+
+        public static IEnumerable<Type> GetTypesWithAttribute(
+            this Assembly self,
+            Type attributeType,
+            bool ignoreInheritance = false,
+            bool exactAttributeType = false
+        )
+        {
+            var types = self.GetTypes();
+
+            return types.WithAttribute(attributeType, ignoreInheritance, exactAttributeType);
+        }
+
+        public static IEnumerable<Type> GetTypesWithAttribute<TAttribute>(
+            this Assembly self,
+            bool ignoreInheritance = false,
+            bool exactAttributeType = false
+        ) where TAttribute : Attribute
+        {
+            return self.GetTypesWithAttribute(
+                typeof(TAttribute),
+                ignoreInheritance,
+                exactAttributeType
+            );
+        }
+
+        public static IEnumerable<Type> GetTypesWithAttributeOnSelf(
+            this Assembly self,
+            Type attributeType,
+            bool exactAttributeType = false
+        )
+        {
+            var types = self.GetTypes();
+
+            return types.WithAttributeOnSelf(attributeType, exactAttributeType);
+        }
+
+        public static IEnumerable<Type> GetTypesWithAttributeOnSelf<TAttribute>(
+            this Assembly self,
+            bool exactAttributeType = false
+        ) where TAttribute : Attribute
+        {
+            return self.GetTypesWithAttributeOnSelf(typeof(TAttribute), exactAttributeType);
         }
     }
 }
