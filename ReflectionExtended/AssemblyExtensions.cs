@@ -6,34 +6,136 @@ namespace ReflectionExtended
 {
     public static class AssemblyExtensions
     {
-        public static IEnumerable<Type> GetInterfaces(
+        public static IEnumerable<Type> GetClasses(
             this Assembly self,
-            bool includePublic = true,
-            bool includeInternal = false,
+            bool includeNonPublic = false,
+            bool includeNested = false,
+            bool includeAbstract = true
+        )
+        {
+            Type[] types;
+
+            if (!includeNonPublic)
+            {
+                types = self.GetExportedTypes();
+            }
+            else
+            {
+                types = self.GetTypes();
+            }
+
+            if (types.Length is 0)
+                return types;
+
+            List<Type> list = new();
+
+            for (var i = 0; i < types.Length; i++)
+            {
+                Type type = types[i];
+
+                if (!type.IsClass)
+                {
+                    continue;
+                }
+
+                if (!includeNested && type.DeclaringType is not null)
+                {
+                    continue;
+                }
+
+                if (!includeAbstract && type.IsAbstract)
+                {
+                    continue;
+                }
+
+                list.Add(type);
+            }
+
+            return list;
+        }
+
+        public static IEnumerable<Type> GetStructs(
+            this Assembly self,
+            bool includeNonPublic = false,
             bool includeNested = false
         )
         {
-            throw new NotImplementedException();
+            Type[] types;
+
+            if (!includeNonPublic)
+            {
+                types = self.GetExportedTypes();
+            }
+            else
+            {
+                types = self.GetTypes();
+            }
+
+            if (types.Length is 0)
+                return types;
+
+            List<Type> list = new();
+
+            for (var i = 0; i < types.Length; i++)
+            {
+                var type = types[i];
+
+                if (!type.IsValueType)
+                {
+                    continue;
+                }
+
+                if (!includeNested && type.DeclaringType is not null)
+                {
+                    continue;
+                }
+
+                list.Add(type);
+            }
+
+            return list;
         }
 
-        public static IEnumerable<Type> GetAbstractClasses(this Assembly self)
+        public static IEnumerable<Type> GetInterfaces(
+            this Assembly self,
+            bool includeNonPublic=false,
+            bool includeNested=false
+        )
         {
-            throw new NotImplementedException();
-        }
+            Type[] types;
 
-        public static IEnumerable<Type> GetClasses(this Assembly self, bool includeAbstract = false)
-        {
-            throw new NotImplementedException();
-        }
+            if (!includeNonPublic)
+            {
+                types = self.GetExportedTypes();
+            }
+            else
+            {
+                types = self.GetTypes();
+            }
 
-        public static IEnumerable<Type> GetConcreteTypes(this Assembly self)
-        {
-            throw new NotImplementedException();
-        }
+            if (types.Length is 0)
+                return types;
 
-        public static IEnumerable<Type> GetStructs(this Assembly self)
-        {
-            throw new NotImplementedException();
+            List<Type> list = new();
+
+            for (var i = 0; i < types.Length; i++)
+            {
+                var type = types[i];
+
+                if (!type.IsInterface)
+                {
+                    continue;
+                }
+
+                if (!includeNested && type.DeclaringType is not null)
+                {
+                    continue;
+                }
+
+                list.Add(type);
+            }
+
+            return list;
         }
     }
 }
