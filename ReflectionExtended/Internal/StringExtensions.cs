@@ -1,4 +1,4 @@
-﻿namespace ReflectionExtended
+namespace ReflectionExtended.Internal
 {
     internal static class StringExtensions
     {

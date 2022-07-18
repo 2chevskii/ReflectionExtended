@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -108,15 +108,19 @@ namespace ReflectionExtended
             return typeof(IList).IsAssignableFrom(self);
         }
 
-        public static IEnumerable<Type> GetInheritanceChain(this Type type, bool includeSelf = true)
+        public static IEnumerable<Type> GetInheritanceChain(
+            this Type type,
+            bool includeSelf = true,
+            bool includeObject = true
+        )
         {
             var currentType = includeSelf ? type : type.BaseType;
 
-            while (currentType is not null)
+            while (currentType is not null && (includeObject || currentType != typeof(object)))
             {
                 yield return currentType;
 
-                currentType = type.BaseType;
+                currentType = currentType.BaseType;
             }
         }
     }
