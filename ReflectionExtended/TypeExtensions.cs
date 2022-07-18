@@ -8,6 +8,12 @@ namespace ReflectionExtended
 {
     public static class TypeExtensions
     {
+        const BindingFlags BINDING_FLAGS_PUBLIC     = BindingFlags.Public;
+        const BindingFlags BINDING_FLAGS_NON_PUBLIC = BindingFlags.NonPublic;
+        const BindingFlags BINDING_FLAGS_ALL_ACCESS = BindingFlags.Public | BindingFlags.NonPublic;
+        const BindingFlags BINDING_FLAGS_INSTANCE   = BindingFlags.Instance;
+        const BindingFlags BINDING_FLAGS_STATIC     = BindingFlags.Static;
+
         /// <summary>
         /// Check if current type is assignable to given type
         /// </summary>
@@ -213,6 +219,34 @@ namespace ReflectionExtended
         {
             return appDomain.GetAssemblies()
                             .SelectMany(assembly => self.GetDerivedTypes(assembly, onlyExported));
+        }
+
+        public static MethodInfo GetInstanceMethod(
+            this Type self,
+            string name,
+            bool includeNonPublic = false
+        )
+        {
+            if (includeNonPublic)
+            {
+                return self.GetMethod(name, BINDING_FLAGS_INSTANCE | BINDING_FLAGS_ALL_ACCESS);
+            }
+
+            return self.GetMethod(name, BINDING_FLAGS_INSTANCE | BINDING_FLAGS_PUBLIC);
+        }
+
+        public static MethodInfo GetStaticMethod(
+            this Type self,
+            string name,
+            bool includeNonPublic = false
+        )
+        {
+            if (includeNonPublic)
+            {
+                return self.GetMethod(name, BINDING_FLAGS_STATIC | BINDING_FLAGS_ALL_ACCESS);
+            }
+
+            return self.GetMethod(name, BINDING_FLAGS_STATIC | BINDING_FLAGS_PUBLIC);
         }
     }
 
