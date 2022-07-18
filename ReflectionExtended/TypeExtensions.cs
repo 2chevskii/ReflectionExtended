@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace ReflectionExtended
@@ -247,6 +248,49 @@ namespace ReflectionExtended
             }
 
             return self.GetMethod(name, BINDING_FLAGS_STATIC | BINDING_FLAGS_PUBLIC);
+        }
+
+        public static TProperty GetAttributeProperty<TAttribute, TProperty>(
+            this Type self,
+            Expression<Func<TAttribute, TProperty>> propertySelectExpression
+        ) where TAttribute : Attribute
+        {
+            var attribute = self.GetCustomAttribute<TAttribute>();
+
+            if (attribute is null)
+                throw new InvalidOperationException(
+                    $"Type '{self.Name}' does not contain an attribute of type '{typeof(TAttribute).Name}'"
+                );
+
+            var memberExpression = propertySelectExpression.Body as MemberExpression;
+
+            if (memberExpression is null)
+                throw new ArgumentException(
+                    "Given expression must be a member access expression",
+                    nameof(propertySelectExpression)
+                );
+
+            object value;
+
+            if (memberExpression.Member is PropertyInfo pi)
+            {
+                value = pi.GetValue(attribute);
+            }
+            else if (memberExpression.Member is FieldInfo fi)
+            {
+                value = fi.GetValue(attribute);
+            }
+            else
+                throw new ArgumentException(
+                    "Given expression must be a property or field access expression"
+                );
+
+            if (value is not TProperty propertyValue)
+            {
+                throw new ArgumentException();
+            }
+
+            return propertyValue;
         }
     }
 
