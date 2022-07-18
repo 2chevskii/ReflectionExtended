@@ -292,6 +292,106 @@ namespace ReflectionExtended
 
             return propertyValue;
         }
+
+        public static Attribute GetCustomAttributeIgnoringInheritance(
+            this Type self,
+            Type attributeType,
+            bool exactAttributeType = false
+        )
+        {
+            if (self is null)
+                throw new ArgumentNullException(nameof(self));
+
+            if (!attributeType.Is<Attribute>())
+            {
+                throw new ArgumentException(
+                    $"Given type must be derived from {typeof(Attribute).FullName}",
+                    nameof(attributeType)
+                );
+            }
+
+            var selfAttr = self.GetCustomAttribute(attributeType, true);
+
+            if (selfAttr is not null &&
+                (!exactAttributeType || selfAttr.GetType() == attributeType))
+            {
+                return selfAttr;
+            }
+
+            var inheritanceChain = self.GetInheritanceChain(false, false);
+
+            foreach (Type ancestor in inheritanceChain)
+            {
+                var attr = ancestor.GetCustomAttribute(attributeType, false);
+
+                if (attr is not null && (!exactAttributeType || attr.GetType() == attributeType))
+                {
+                    return attr;
+                }
+            }
+
+            return null;
+        }
+
+        public static TAttribute GetCustomAttributeIgnoringInheritance<TAttribute>(
+            this Type self,
+            bool exactAttributeType = false
+        ) where TAttribute : Attribute
+        {
+            return (TAttribute) self.GetCustomAttributeIgnoringInheritance(
+                typeof(TAttribute),
+                exactAttributeType
+            );
+        }
+
+        public static IEnumerable<Attribute> GetCustomAttributesIgnoringInheritance(
+            this Type self,
+            Type attributeType,
+            bool exactAttributeType = false
+        )
+        {
+            if (self is null)
+                throw new ArgumentNullException(nameof(self));
+
+            if (!attributeType.Is<Attribute>())
+            {
+                throw new ArgumentException(
+                    $"Given type must be derived from {typeof(Attribute).FullName}",
+                    nameof(attributeType)
+                );
+            }
+
+            var inheritanceChain = self.GetInheritanceChain(true, false);
+            var list = new List<Attribute>();
+
+            foreach (Type type in inheritanceChain)
+            {
+                var attributes = type.GetCustomAttributes(attributeType, false);
+
+                foreach (object attribute in attributes)
+                {
+                    if (exactAttributeType && !attribute.GetType().IsExactly(attributeType))
+                    {
+                        continue;
+                    }
+
+                    list.Add((Attribute)attribute);
+                }
+            }
+
+            return list;
+        }
+
+        public static IEnumerable<TAttribute> GetCustomAttributesIgnoringInheritance<TAttribute>(
+            this Type self,
+            bool exactAttributeType = false
+        ) where TAttribute : Attribute
+
+        {
+            return self
+                   .GetCustomAttributesIgnoringInheritance(typeof(TAttribute), exactAttributeType)
+                   .Cast<TAttribute>();
+        }
     }
 
 }
