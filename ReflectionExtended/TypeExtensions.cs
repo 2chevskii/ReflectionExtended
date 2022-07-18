@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace ReflectionExtended
 {
@@ -65,7 +67,6 @@ namespace ReflectionExtended
         }
 
 #if !NET5_0_OR_GREATER
-
         /// <summary>
         /// Polyfill for .NET &lt; 5 which does the same as <see cref="Type.IsAssignableFrom"/> but with swapped arguments
         /// </summary>
@@ -78,5 +79,46 @@ namespace ReflectionExtended
         }
 
 #endif
+
+        public static bool IsEnumerable(this Type self, bool notString = true)
+        {
+            if (notString && self == typeof(string))
+                return false;
+
+            return typeof(IEnumerable).IsAssignableFrom(self);
+        }
+
+        public static bool IsGenericCollection(this Type self)
+        {
+            return typeof(ICollection<>).IsAssignableFrom(self);
+        }
+
+        public static bool IsNonGenericCollection(this Type self)
+        {
+            return typeof(ICollection).IsAssignableFrom(self);
+        }
+
+        public static bool IsGenericList(this Type self)
+        {
+            return typeof(IList<>).IsAssignableFrom(self);
+        }
+
+        public static bool IsNonGenericList(this Type self)
+        {
+            return typeof(IList).IsAssignableFrom(self);
+        }
+
+        public static IEnumerable<Type> GetInheritanceChain(this Type type, bool includeSelf = true)
+        {
+            var currentType = includeSelf ? type : type.BaseType;
+
+            while (currentType is not null)
+            {
+                yield return currentType;
+
+                currentType = type.BaseType;
+            }
+        }
     }
+
 }
