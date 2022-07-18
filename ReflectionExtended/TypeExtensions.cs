@@ -313,7 +313,7 @@ namespace ReflectionExtended
             var selfAttr = self.GetCustomAttribute(attributeType, true);
 
             if (selfAttr is not null &&
-                (!exactAttributeType || selfAttr.GetType() == attributeType))
+                (!exactAttributeType || selfAttr.GetType().IsExactly(attributeType)))
             {
                 return selfAttr;
             }
@@ -375,7 +375,7 @@ namespace ReflectionExtended
                         continue;
                     }
 
-                    list.Add((Attribute)attribute);
+                    list.Add((Attribute) attribute);
                 }
             }
 
@@ -391,6 +391,71 @@ namespace ReflectionExtended
             return self
                    .GetCustomAttributesIgnoringInheritance(typeof(TAttribute), exactAttributeType)
                    .Cast<TAttribute>();
+        }
+
+        public static bool HasAttribute(
+            this Type self,
+            Type attributeType,
+            bool ignoreInheritance = false,
+            bool exactAttributeType = false
+        )
+        {
+            if (ignoreInheritance)
+            {
+                return self.GetCustomAttributeIgnoringInheritance(attributeType, exactAttributeType)
+                           is not null;
+            }
+
+            if(exactAttributeType)
+            {
+                return self.GetCustomAttributes(attributeType)
+                           .Any(a => a.GetType().IsExactly(attributeType));
+            }
+
+            return self.GetCustomAttributes(attributeType).Any();
+        }
+
+        public static bool HasAttribute<TAttribute>(
+            this Type self,
+            bool ignoreInheritance = false,
+            bool exactAttributeType = false
+        ) where TAttribute : Attribute
+        {
+            return self.HasAttribute(typeof(TAttribute), ignoreInheritance, exactAttributeType);
+        }
+
+        public static bool HasAttributeOnSelf(
+            this Type self,
+            Type attributeType,
+            bool exactAttributeType = false
+        )
+        {
+            if (self is null)
+                throw new ArgumentNullException(nameof(self));
+
+            if (!attributeType.Is<Attribute>())
+                throw new ArgumentException(
+                    $"Given type must be derived from {typeof(Attribute).FullName}",
+                    nameof(attributeType)
+                );
+
+            var attribute = self.GetCustomAttribute(attributeType);
+
+            if (attribute is null)
+                return false;
+
+            if (exactAttributeType)
+                return attribute.GetType().IsExactly(attributeType);
+
+            return true;
+        }
+
+        public static bool HasAttributeOnSelf<TAttribute>(
+            this Type self,
+            bool exactAttributeType = false
+        ) where TAttribute : Attribute
+        {
+            return self.HasAttributeOnSelf(typeof(TAttribute), exactAttributeType);
         }
     }
 
