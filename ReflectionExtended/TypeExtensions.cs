@@ -48,6 +48,22 @@ namespace ReflectionExtended
             return self.IsExactly(typeof(T));
         }
 
+        /// <summary>
+        /// Generic overload of <see cref="Type.IsAssignableFrom"/>
+        /// </summary>
+        /// <typeparam name="T">Source type</typeparam>
+        /// <param name="self">Current type</param>
+        /// <returns></returns>
+        public static bool IsAssignableFrom<T>(this Type self)
+        {
+            return self.IsAssignableFrom(typeof(T));
+        }
+
+        public static bool IsAssignableTo<T>(this Type self)
+        {
+            return self.IsAssignableTo(typeof(T));
+        }
+
 #if !NET5_0_OR_GREATER
 
         /// <summary>
