@@ -94,7 +94,33 @@ namespace ReflectionExtended
 
         public static bool IsGenericCollection(this Type self)
         {
-            return typeof(ICollection<>).IsAssignableFrom(self);
+            Type icType = typeof(ICollection<>);
+
+            if (!self.IsGenericType)
+            {
+                return false;
+            }
+
+            if (self.IsConstructedGenericType && self.GenericTypeArguments.Length is not 0)
+            {
+                var typeArg = self.GenericTypeArguments[0];
+
+                return icType.MakeGenericType(typeArg).IsAssignableFrom(self);
+            }
+
+            if (icType.IsAssignableFrom(self))
+            {
+                return true;
+            }
+
+            return self.GetInterfaces()
+                       .Any(
+                           i => i is {
+                               Name: "ICollection`1",
+                               IsGenericType: true,
+                               GenericTypeArguments: {Length: 1}
+                           }
+                       );
         }
 
         public static bool IsNonGenericCollection(this Type self)
@@ -114,7 +140,6 @@ namespace ReflectionExtended
 
         #endregion
 
-        
     }
 
 }
