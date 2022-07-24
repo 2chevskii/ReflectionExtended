@@ -178,16 +178,59 @@ namespace ReflectionExtended.Tests
             typeof(List<string>).IsExactly<List<int>>().Should().BeFalse();
         }
 
-        [TestMethod]
-        public void AttributeTest()
+        [DataTestMethod]
+        [DataRow(typeof(int),false)]
+        [DataRow(typeof(IEnumerable),true)]
+        [DataRow(typeof(IEnumerable<>),true)]
+        [DataRow(typeof(int[]),true)]
+        [DataRow(typeof(string[]),true)]
+        [DataRow(typeof(long),false)]
+        [DataRow(typeof(Type),false)]
+        [DataRow(typeof(List<>),true)]
+        [DataRow(typeof(List<int>),true)]
+        [DataRow(typeof(Enum),false)]
+        [DataRow(typeof(HashSet<char>),true)]
+        public void IsEnumerableTest(Type type, bool expected)
         {
-            var prop = typeof(AttrTarget).GetAttributeProperty<MockAttrAttribute, float>(attr => attr.Number);
-            var field =
-                typeof(AttrTarget).GetAttributeProperty<MockAttrAttribute, float>(
-                    attr => attr.NumberField
-                );
-            Console.WriteLine("Property value: {0}", prop);
-            Console.WriteLine("Field value: {0}", field);
+            type.IsEnumerable().Should().Be(expected);
+        }
+
+        [DataTestMethod]
+        [DataRow(typeof(IList<>), true)]
+        [DataRow(typeof(IList<bool>), true)]
+        [DataRow(typeof(IList<int>), true)]
+        [DataRow(typeof(ICollection<int>), true)]
+        [DataRow(typeof(ICollection<>), true)]
+        [DataRow(typeof(HashSet<string>), true)]
+        [DataRow(typeof(LinkedList<string>), true)]
+        [DataRow(typeof(object), false)]
+        [DataRow(typeof(int), false)]
+        [DataRow(typeof(string), false)]
+        [DataRow(typeof(bool), false)]
+        [DataRow(typeof(Enum), false)]
+        [DataRow(typeof(Enumerable), false)]
+        [DataRow(typeof(TestContext), false)]
+        public void IsGenericCollectionTest(Type type, bool expected)
+        {
+            type.IsGenericCollection().Should().Be(expected);
+        }
+
+        [DataTestMethod]
+        [DataRow(typeof(IList), true)]
+        [DataRow(typeof(ICollection), true)]
+        [DataRow(typeof(ArrayList), true)]
+        [DataRow(typeof(Hashtable), true)]
+        [DataRow(typeof(int), false)]
+        [DataRow(typeof(string), false)]
+        [DataRow(typeof(bool), false)]
+        [DataRow(typeof(double), false)]
+        [DataRow(typeof(Enum), false)]
+        [DataRow(typeof(object), false)]
+        [DataRow(typeof(IEnumerable), false)]
+        [DataRow(typeof(IEnumerable<>), false)]
+        public void IsNonGenericCollectionTest(Type type, bool expected)
+        {
+            type.IsNonGenericCollection().Should().Be(expected);
         }
     }
 }
