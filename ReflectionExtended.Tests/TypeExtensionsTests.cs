@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 using FluentAssertions;
 
@@ -175,6 +176,18 @@ namespace ReflectionExtended.Tests
             typeof(List<string>).IsExactly<IList<string>>().Should().BeFalse();
             typeof(List<string>).IsExactly<List<string>>().Should().BeTrue();
             typeof(List<string>).IsExactly<List<int>>().Should().BeFalse();
+        }
+
+        [TestMethod]
+        public void AttributeTest()
+        {
+            var prop = typeof(AttrTarget).GetAttributeProperty<MockAttrAttribute, float>(attr => attr.Number);
+            var field =
+                typeof(AttrTarget).GetAttributeProperty<MockAttrAttribute, float>(
+                    attr => attr.NumberField
+                );
+            Console.WriteLine("Property value: {0}", prop);
+            Console.WriteLine("Field value: {0}", field);
         }
     }
 }
