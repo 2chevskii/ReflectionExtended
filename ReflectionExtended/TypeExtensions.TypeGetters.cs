@@ -15,7 +15,7 @@ namespace ReflectionExtended
         {
             var currentType = includeSelf ? type : type.BaseType;
 
-            while (currentType is not null && (includeObject || currentType != typeof(object)))
+            while (currentType is not null && (includeObject || currentType != typeof( object )))
             {
                 yield return currentType;
 
@@ -27,89 +27,59 @@ namespace ReflectionExtended
             this Type self,
             BindingFlags bindingFlags = BindingFlags.Public,
             bool includeAbstract = true
-        )
-        {
-            return self.GetNestedTypes(bindingFlags)
-                       .Where(t => t.IsClass && (includeAbstract || !t.IsAbstract));
-        }
+        ) => from type in self.GetNestedTypes( bindingFlags )
+             where type.IsClass
+             where includeAbstract || !type.IsAbstract
+             select type;
 
         public static IEnumerable<Type> GetNestedAbstractClasses(
             this Type self,
             BindingFlags bindingFlags = BindingFlags.Public
-        )
-        {
-            return self.GetNestedTypes(bindingFlags).Where(t => t.IsClass && t.IsAbstract);
-        }
+        ) => from type in self.GetNestedTypes( bindingFlags )
+             where type is {IsClass: true, IsAbstract: true}
+             select type;
 
         public static IEnumerable<Type> GetNestedValueTypes(
             this Type self,
             BindingFlags bindingFlags = BindingFlags.Public
-        )
-        {
-            return self.GetNestedTypes(bindingFlags).Where(t => t.IsValueType);
-        }
+        ) => from type in self.GetNestedTypes( bindingFlags ) where type.IsValueType select type;
 
         public static IEnumerable<Type> GetNestedInterfaces(
             this Type self,
             BindingFlags bindingFlags = BindingFlags.Public
-        )
-        {
-            return self.GetNestedTypes(bindingFlags).Where(t => t.IsInterface);
-        }
+        ) => from type in self.GetNestedTypes( bindingFlags ) where type.IsInterface select type;
 
         public static IEnumerable<Type> GetDerivedTypes(
             this Type self,
-            Assembly assembly,
+            Assembly assembly = null,
             bool onlyExported = false
-        )
-        {
-            Type[] assemblyTypes;
-
-            if (onlyExported)
-            {
-                assemblyTypes = assembly.GetExportedTypes();
-            }
-            else
-            {
-                assemblyTypes = assembly.GetTypes();
-            }
-
-            return assemblyTypes.Where(t => t.Is(self) && t != self);
-        }
+        ) => from type in onlyExported
+                          ? (assembly ?? self.Assembly).GetExportedTypes()
+                          : (assembly ?? self.Assembly).GetTypes()
+             where type != self && type.IsAssignableTo( self )
+             select type;
 
         public static IEnumerable<Type> GetDerivedTypes(
             this Type self,
             IEnumerable<Assembly> assemblies,
             bool onlyExported = false
-        )
-        {
-            return assemblies.SelectMany(assembly => self.GetDerivedTypes(assembly, onlyExported));
-        }
+        ) => assemblies.SelectMany( assembly => self.GetDerivedTypes( assembly, onlyExported ) );
 
         public static IEnumerable<Type> GetDerivedTypes(
             this Type self,
             params Assembly[] assemblies
-        )
-        {
-            return self.GetDerivedTypes((IEnumerable<Assembly>) assemblies);
-        }
+        ) => self.GetDerivedTypes( (IEnumerable<Assembly>) assemblies );
 
         public static IEnumerable<Type> GetExportedDerivedTypes(
             this Type self,
             params Assembly[] assemblies
-        )
-        {
-            return self.GetDerivedTypes(assemblies, true);
-        }
+        ) => self.GetDerivedTypes( assemblies, true );
 
         public static IEnumerable<Type> GetDerivedTypes(
             this Type self,
             AppDomain appDomain,
             bool onlyExported = false
-        )
-        {
-            return appDomain.GetAssemblies()
-                            .SelectMany(assembly => self.GetDerivedTypes(assembly, onlyExported));
-        }
+        ) => appDomain.GetAssemblies()
+                      .SelectMany( assembly => self.GetDerivedTypes( assembly, onlyExported ) );
     }
 }
