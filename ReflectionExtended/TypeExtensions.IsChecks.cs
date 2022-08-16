@@ -15,10 +15,7 @@ namespace ReflectionExtended
         /// <param name="self">Current type</param>
         /// <param name="other">Target type</param>
         /// <returns></returns>
-        public static bool Is(this Type self, Type other)
-        {
-            return other.IsAssignableFrom(self);
-        }
+        public static bool Is(this Type self, Type other)=> other.IsAssignableFrom( self );
 
         /// <summary>
         /// <inheritdoc cref="Is"/>
@@ -26,10 +23,7 @@ namespace ReflectionExtended
         /// <typeparam name="T">Current type</typeparam>
         /// <param name="self">Target type</param>
         /// <returns></returns>
-        public static bool Is<T>(this Type self)
-        {
-            return self.Is(typeof(T));
-        }
+        public static bool Is<T>(this Type self) => self.IsAssignableFrom<T>();
 
         /// <summary>
         /// Check if current type is equal to given type
@@ -37,10 +31,7 @@ namespace ReflectionExtended
         /// <param name="self">Current type</param>
         /// <param name="other">Target type</param>
         /// <returns></returns>
-        public static bool IsExactly(this Type self, Type other)
-        {
-            return self == other;
-        }
+        public static bool IsExactly(this Type self, Type other) => self == other;
 
         /// <summary>
         /// <inheritdoc cref="IsExactly"/>
@@ -48,10 +39,7 @@ namespace ReflectionExtended
         /// <typeparam name="T">Current type</typeparam>
         /// <param name="self">Given type</param>
         /// <returns></returns>
-        public static bool IsExactly<T>(this Type self)
-        {
-            return self.IsExactly(typeof(T));
-        }
+        public static bool IsExactly<T>(this Type self) => self == typeof( T );
 
         /// <summary>
         /// Generic overload of <see cref="Type.IsAssignableFrom"/>
@@ -59,15 +47,9 @@ namespace ReflectionExtended
         /// <typeparam name="T">Source type</typeparam>
         /// <param name="self">Current type</param>
         /// <returns></returns>
-        public static bool IsAssignableFrom<T>(this Type self)
-        {
-            return self.IsAssignableFrom(typeof(T));
-        }
+        public static bool IsAssignableFrom<T>(this Type self) => self.IsAssignableFrom( typeof( T ) );
 
-        public static bool IsAssignableTo<T>(this Type self)
-        {
-            return self.IsAssignableTo(typeof(T));
-        }
+        public static bool IsAssignableTo<T>(this Type self) => self.IsAssignableTo( typeof( T ) );
 
 #if !NET5_0_OR_GREATER
         /// <summary>
@@ -76,10 +58,7 @@ namespace ReflectionExtended
         /// <param name="self"></param>
         /// <param name="other"></param>
         /// <returns></returns>
-        public static bool IsAssignableTo(this Type self, Type other)
-        {
-            return other.IsAssignableFrom(self);
-        }
+        public static bool IsAssignableTo(this Type self, Type other) => other.IsAssignableFrom( self );
 #endif
 
         #region Common known types checks
