@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace ReflectionExtended
@@ -11,132 +12,29 @@ namespace ReflectionExtended
             bool includeNonPublic = false,
             bool includeNested = false,
             bool includeAbstract = true
-        )
-        {
-            Type[] types;
-
-            if (!includeNonPublic)
-            {
-                types = self.GetExportedTypes();
-            }
-            else
-            {
-                types = self.GetTypes();
-            }
-
-            if (types.Length is 0)
-                return types;
-
-            List<Type> list = new();
-
-            for (var i = 0; i < types.Length; i++)
-            {
-                Type type = types[i];
-
-                if (!type.IsClass)
-                {
-                    continue;
-                }
-
-                if (!includeNested && type.DeclaringType is not null)
-                {
-                    continue;
-                }
-
-                if (!includeAbstract && type.IsAbstract)
-                {
-                    continue;
-                }
-
-                list.Add(type);
-            }
-
-            return list;
-        }
+        ) => from type in includeNonPublic ? self.GetTypes() : self.GetExportedTypes()
+             where type.IsClass
+             where includeNested || type.DeclaringType is null
+             where includeAbstract || !type.IsAbstract
+             select type;
 
         public static IEnumerable<Type> GetStructs(
             this Assembly self,
             bool includeNonPublic = false,
             bool includeNested = false
-        )
-        {
-            Type[] types;
-
-            if (!includeNonPublic)
-            {
-                types = self.GetExportedTypes();
-            }
-            else
-            {
-                types = self.GetTypes();
-            }
-
-            if (types.Length is 0)
-                return types;
-
-            List<Type> list = new();
-
-            for (var i = 0; i < types.Length; i++)
-            {
-                var type = types[i];
-
-                if (!type.IsValueType)
-                {
-                    continue;
-                }
-
-                if (!includeNested && type.DeclaringType is not null)
-                {
-                    continue;
-                }
-
-                list.Add(type);
-            }
-
-            return list;
-        }
+        ) => from type in includeNonPublic ? self.GetTypes() : self.GetExportedTypes()
+             where type.IsValueType
+             where includeNested || type.DeclaringType is null
+             select type;
 
         public static IEnumerable<Type> GetInterfaces(
             this Assembly self,
-            bool includeNonPublic = false,
-            bool includeNested = false
-        )
-        {
-            Type[] types;
-
-            if (!includeNonPublic)
-            {
-                types = self.GetExportedTypes();
-            }
-            else
-            {
-                types = self.GetTypes();
-            }
-
-            if (types.Length is 0)
-                return types;
-
-            List<Type> list = new();
-
-            for (var i = 0; i < types.Length; i++)
-            {
-                var type = types[i];
-
-                if (!type.IsInterface)
-                {
-                    continue;
-                }
-
-                if (!includeNested && type.DeclaringType is not null)
-                {
-                    continue;
-                }
-
-                list.Add(type);
-            }
-
-            return list;
-        }
+            bool          includeNonPublic = false,
+            bool          includeNested    = false
+        ) => from type in includeNonPublic ? self.GetTypes() : self.GetExportedTypes()
+             where type.IsInterface
+             where includeNested || type.DeclaringType is null
+             select type;
 
         public static IEnumerable<Type> GetTypesWithAttribute(
             this Assembly self,
