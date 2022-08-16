@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Linq;
+using System.Net.Sockets;
 using System.Reflection;
 
 namespace ReflectionExtended
@@ -10,15 +11,15 @@ namespace ReflectionExtended
     {
         public static object GetAttributeProperty(
             this Type self,
-            Type      attributeType,
-            string    propertyName,
-            bool      ignoreInheritance  = false,
-            bool      exactAttributeType = true
+            Type attributeType,
+            string propertyName,
+            bool ignoreInheritance = false,
+            bool exactAttributeType = true
         )
         {
             Attribute attribute;
 
-            if ( ignoreInheritance )
+            if (ignoreInheritance)
             {
                 attribute = self.GetCustomAttributeIgnoringInheritance( attributeType, exactAttributeType );
             }
@@ -28,10 +29,10 @@ namespace ReflectionExtended
                                 .FirstOrDefault( a => !exactAttributeType || a.GetType() == attributeType );
             }
 
-            if ( attribute is null )
+            if (attribute is null)
                 throw new Exception( $"Attribute {attributeType} not found on type {self}" );
 
-            foreach ( MemberInfo memberInfo in attributeType.GetMember( propertyName ) )
+            foreach (MemberInfo memberInfo in attributeType.GetMember( propertyName ))
             {
                 switch (memberInfo)
                 {
@@ -48,10 +49,10 @@ namespace ReflectionExtended
 
         public static TProperty GetAttributeProperty<TProperty>(
             this Type self,
-            Type      attributeType,
-            string    propertyName,
-            bool      ignoreInheritance  = false,
-            bool      exactAttributeType = true
+            Type attributeType,
+            string propertyName,
+            bool ignoreInheritance = false,
+            bool exactAttributeType = true
         )
         {
             var value = self.GetAttributeProperty( attributeType, propertyName, ignoreInheritance, exactAttributeType );
@@ -60,16 +61,16 @@ namespace ReflectionExtended
         }
 
         public static object GetAttributeProperty<TAttribute>(
-            this Type                            self,
+            this Type self,
             Expression<Func<TAttribute, object>> propertySelectExpression,
-            bool                                 ignoreInheritance  = false,
-            bool                                 exactAttributeType = true
+            bool ignoreInheritance = false,
+            bool exactAttributeType = true
         )
         {
             Attribute attribute;
             Type      attributeType = typeof( TAttribute );
 
-            if ( ignoreInheritance )
+            if (ignoreInheritance)
             {
                 attribute = self.GetCustomAttributeIgnoringInheritance( attributeType, exactAttributeType );
             }
@@ -79,12 +80,12 @@ namespace ReflectionExtended
                                 .FirstOrDefault( a => !exactAttributeType || a.GetType() == attributeType );
             }
 
-            if ( attribute is null )
+            if (attribute is null)
                 throw new Exception( $"Attribute {attributeType} not found on type {self}" );
 
             var memberExpression = propertySelectExpression.Body as MemberExpression;
 
-            if ( memberExpression is null )
+            if (memberExpression is null)
                 throw new InvalidOperationException( "Given expression cannot be converted to MemberExpression" );
 
             return memberExpression.Member switch {
@@ -96,16 +97,16 @@ namespace ReflectionExtended
         }
 
         public static TProperty GetAttributeProperty<TAttribute, TProperty>(
-            this Type                               self,
+            this Type self,
             Expression<Func<TAttribute, TProperty>> propertySelectExpression,
-            bool                                    ignoreInheritance  = false,
-            bool                                    exactAttributeType = true
+            bool ignoreInheritance = false,
+            bool exactAttributeType = true
         )
         {
             Attribute attribute;
             Type      attributeType = typeof( TAttribute );
 
-            if ( ignoreInheritance )
+            if (ignoreInheritance)
             {
                 attribute = self.GetCustomAttributeIgnoringInheritance( attributeType, exactAttributeType );
             }
@@ -115,12 +116,12 @@ namespace ReflectionExtended
                                 .FirstOrDefault( a => !exactAttributeType || a.GetType() == attributeType );
             }
 
-            if ( attribute is null )
+            if (attribute is null)
                 throw new Exception( $"Attribute {attributeType} not found on type {self}" );
 
             var memberExpression = propertySelectExpression.Body as MemberExpression;
 
-            if ( memberExpression is null )
+            if (memberExpression is null)
                 throw new InvalidOperationException( "Given expression cannot be converted to MemberExpression" );
 
             return memberExpression.Member switch {
@@ -136,60 +137,17 @@ namespace ReflectionExtended
                        var _ => throw new Exception()
                    };
         }
-        //
-        // public static TProperty GetAttributeProperty<TAttribute, TProperty>(
-        //     this Type self,
-        //     Expression<Func<TAttribute, TProperty>> propertySelectExpression
-        // ) where TAttribute : Attribute
-        // {
-        //     var attribute = self.GetCustomAttribute<TAttribute>();
-        //
-        //     if (attribute is null)
-        //         throw new InvalidOperationException(
-        //             $"Type '{self.Name}' does not contain an attribute of type '{typeof(TAttribute).Name}'"
-        //         );
-        //
-        //     var memberExpression = propertySelectExpression.Body as MemberExpression;
-        //
-        //     if (memberExpression is null)
-        //         throw new ArgumentException(
-        //             "Given expression must be a member access expression",
-        //             nameof(propertySelectExpression)
-        //         );
-        //
-        //     object value;
-        //
-        //     if (memberExpression.Member is PropertyInfo pi)
-        //     {
-        //         value = pi.GetValue(attribute);
-        //     }
-        //     else if (memberExpression.Member is FieldInfo fi)
-        //     {
-        //         value = fi.GetValue(attribute);
-        //     }
-        //     else
-        //         throw new ArgumentException(
-        //             "Given expression must be a property or field access expression"
-        //         );
-        //
-        //     if (value is not TProperty propertyValue)
-        //     {
-        //         throw new ArgumentException();
-        //     }
-        //
-        //     return propertyValue;
-        // }
 
         public static Attribute GetCustomAttributeIgnoringInheritance(
             this Type self,
-            Type      attributeType,
-            bool      exactAttributeType = false
+            Type attributeType,
+            bool exactAttributeType = false
         )
         {
-            if ( self is null )
+            if (self is null)
                 throw new ArgumentNullException( nameof( self ) );
 
-            if ( !attributeType.Is<Attribute>() )
+            if (!attributeType.Is<Attribute>())
             {
                 throw new ArgumentException(
                                             $"Given type must be derived from {typeof( Attribute ).FullName}",
@@ -199,18 +157,18 @@ namespace ReflectionExtended
 
             var selfAttr = self.GetCustomAttribute( attributeType, true );
 
-            if ( selfAttr is not null && (!exactAttributeType || selfAttr.GetType().IsExactly( attributeType )) )
+            if (selfAttr is not null && (!exactAttributeType || selfAttr.GetType().IsExactly( attributeType )))
             {
                 return selfAttr;
             }
 
             var inheritanceChain = self.GetInheritanceChain( false, false );
 
-            foreach ( Type ancestor in inheritanceChain )
+            foreach (Type ancestor in inheritanceChain)
             {
                 var attr = ancestor.GetCustomAttribute( attributeType, false );
 
-                if ( attr is not null && (!exactAttributeType || attr.GetType() == attributeType) ) { return attr; }
+                if (attr is not null && (!exactAttributeType || attr.GetType() == attributeType)) { return attr; }
             }
 
             return null;
@@ -218,69 +176,57 @@ namespace ReflectionExtended
 
         public static TAttribute GetCustomAttributeIgnoringInheritance<TAttribute>(
             this Type self,
-            bool      exactAttributeType = false
-        ) where TAttribute : Attribute
-        {
-            return (TAttribute) self.GetCustomAttributeIgnoringInheritance( typeof( TAttribute ), exactAttributeType );
-        }
+            bool exactAttributeType = false
+        ) where TAttribute : Attribute =>
+        (TAttribute) self.GetCustomAttributeIgnoringInheritance( typeof( TAttribute ), exactAttributeType );
 
         public static IEnumerable<Attribute> GetCustomAttributesIgnoringInheritance(
             this Type self,
-            Type      attributeType,
-            bool      exactAttributeType = false
+            Type attributeType,
+            bool exactAttributeType = false
         )
         {
-            if ( self is null )
+            if (self is null)
                 throw new ArgumentNullException( nameof( self ) );
 
-            if ( !attributeType.Is<Attribute>() )
+            if (!attributeType.Is<Attribute>())
             {
                 throw new ArgumentException(
                                             $"Given type must be derived from {typeof( Attribute ).FullName}",
                                             nameof( attributeType )
                                            );
             }
-
-            var inheritanceChain = self.GetInheritanceChain( true, false );
-            var list             = new List<Attribute>();
-
-            foreach ( Type type in inheritanceChain )
-            {
-                var attributes = type.GetCustomAttributes( attributeType, false );
-
-                foreach ( object attribute in attributes )
-                {
-                    if ( exactAttributeType && !attribute.GetType().IsExactly( attributeType ) ) { continue; }
-
-                    list.Add( (Attribute) attribute );
-                }
-            }
-
-            return list;
+            
+            return from type in self.GetInheritanceChain( true, false )
+                   let attributes = type.GetCustomAttributes( attributeType, false )
+                   from attribute in attributes
+                   where !exactAttributeType || attribute.GetType().IsExactly( attributeType )
+                   select (Attribute) attribute;
         }
 
         public static IEnumerable<TAttribute> GetCustomAttributesIgnoringInheritance<TAttribute>(
             this Type self,
-            bool      exactAttributeType = false
-        ) where TAttribute : Attribute
-        {
-            return self.GetCustomAttributesIgnoringInheritance( typeof( TAttribute ), exactAttributeType )
-                       .Cast<TAttribute>();
-        }
+            bool exactAttributeType = false
+        ) where TAttribute : Attribute => self
+                                          .GetCustomAttributesIgnoringInheritance(
+                                               typeof( TAttribute ),
+                                               exactAttributeType
+                                              )
+                                          .Cast<TAttribute>();
 
         public static bool HasAttribute(
             this Type self,
-            Type      attributeType,
-            bool      ignoreInheritance  = false,
-            bool      exactAttributeType = false
+            Type attributeType,
+            bool ignoreInheritance = false,
+            bool exactAttributeType = false
         )
         {
-            if ( ignoreInheritance )
+            if (ignoreInheritance)
             {
                 return self.GetCustomAttributeIgnoringInheritance( attributeType, exactAttributeType ) is not null;
             }
 
-            if ( exactAttributeType )
+            if (exactAttributeType)
             {
                 return self.GetCustomAttributes( attributeType ).Any( a => a.GetType().IsExactly( attributeType ) );
             }
@@ -290,19 +236,17 @@ namespace ReflectionExtended
 
         public static bool HasAttribute<TAttribute>(
             this Type self,
-            bool      ignoreInheritance  = false,
-            bool      exactAttributeType = false
-        ) where TAttribute : Attribute
-        {
-            return self.HasAttribute( typeof( TAttribute ), ignoreInheritance, exactAttributeType );
-        }
+            bool ignoreInheritance = false,
+            bool exactAttributeType = false
+        ) where TAttribute : Attribute =>
+        self.HasAttribute( typeof( TAttribute ), ignoreInheritance, exactAttributeType );
 
         public static bool HasAttributeOnSelf(this Type self, Type attributeType, bool exactAttributeType = false)
         {
-            if ( self is null )
+            if (self is null)
                 throw new ArgumentNullException( nameof( self ) );
 
-            if ( !attributeType.Is<Attribute>() )
+            if (!attributeType.Is<Attribute>())
                 throw new ArgumentException(
                                             $"Given type must be derived from {typeof( Attribute ).FullName}",
                                             nameof( attributeType )
@@ -310,16 +254,13 @@ namespace ReflectionExtended
 
             var attribute = self.GetCustomAttribute( attributeType );
 
-            if ( attribute is null )
+            if (attribute is null)
                 return false;
 
             return !exactAttributeType || attribute.GetType().IsExactly( attributeType );
         }
 
         public static bool HasAttributeOnSelf<TAttribute>(this Type self, bool exactAttributeType = false)
-        where TAttribute : Attribute
-        {
-            return self.HasAttributeOnSelf( typeof( TAttribute ), exactAttributeType );
-        }
+        where TAttribute : Attribute => self.HasAttributeOnSelf( typeof( TAttribute ), exactAttributeType );
     }
 }
