@@ -14,28 +14,8 @@
     <PackageReference Include="coverlet.collector" Version="3.1.2" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(Configuration)' == 'netstandard2.0'">
-    <ProjectReference Include="..\ReflectionExtended\ReflectionExtended.csproj" TargetFramework="netstandard2.0" />
-  </ItemGroup>
-
-  <PropertyGroup Condition="'$(Configuration)' == 'netstandard2.0'">
-    <DefineConstants>$(DefineConstants);CFG_NETSTD</DefineConstants>
-  </PropertyGroup>
-
-  <ItemGroup Condition="'$(Configuration)' == 'net5.0'">
-    <ProjectReference Include="..\ReflectionExtended\ReflectionExtended.csproj" TargetFramework="net5.0" />
-
-  </ItemGroup>
-
   <ItemGroup>
-    <Folder Include="Mocks\" />
+    <ProjectReference Include="..\..\src\ReflectionExtended\ReflectionExtended.csproj" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(Configuration)' == 'net5.0'">
-    <DefineConstants>$(DefineConstants);CFG_NET5</DefineConstants>
-  </PropertyGroup>
-
-  <Target Name="MSG" AfterTargets="Build">
-    <Message Text="Configuration=$(ConfigurationName)" Importance="High" />
-  </Target>
 </Project>

@@ -1,4 +1,5 @@
 <Project>
+
   <PropertyGroup>
     <SourceRoot>$(MSBuildThisFileDirectory)</SourceRoot>
     <GithubRepoUrl>https://github.com/2chevskii/ReflectionExtended</GithubRepoUrl>
@@ -15,17 +16,23 @@
     <PackageIcon>$(SourceRoot)assets\images\package-icon.png</PackageIcon>
   </PropertyGroup>
 
-  <PropertyGroup>
+  <PropertyGroup Label="Compilation options">
     <WarningsAsErrors>true</WarningsAsErrors>
+    <LangVersion>latest</LangVersion>
+    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Symbols">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>portable</DebugType>
     <IncludeSymbols>true</IncludeSymbols>
-    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Analysis options">
     <AnalysisLevel>latest</AnalysisLevel>
-    <RunCodeAnalysis>true</RunCodeAnalysis>
     <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <Features>strict</Features>
-    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
   </PropertyGroup>
+
 </Project>

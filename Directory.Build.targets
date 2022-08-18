@@ -1,7 +1,9 @@
 <Project>
+
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
     <!-- Include README and LICENSE file into generated package -->
     <None Include="$(LicenseFile)" PackagePath="$([System.IO.Path]::GetFileName('$(LicenseFile)'))" Pack="true" />
     <None Include="$(PackageReadmeFile)" PackagePath="$([System.IO.Path]::GetFileName('$(PackageReadmeFile)'))" Pack="true" />
   </ItemGroup>
+
 </Project>
