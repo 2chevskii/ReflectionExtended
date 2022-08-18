@@ -1,0 +1,31 @@
+<Project>
+  <PropertyGroup>
+    <SourceRoot>$(MSBuildThisFileDirectory)</SourceRoot>
+    <GithubRepoUrl>https://github.com/2chevskii/ReflectionExtended</GithubRepoUrl>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Authors>2CHEVSKII</Authors>
+    <Company></Company>
+    <Copyright>Copyright © 2022 2CHEVSKII</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>$(GithubRepoUrl)</PackageProjectUrl>
+    <PackageReadmeFile>$(SourceRoot)README.md</PackageReadmeFile>
+    <LicenseFile>$(SourceRoot)LICENSE</LicenseFile>
+    <PackageIcon>$(SourceRoot)assets\images\package-icon.png</PackageIcon>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <WarningsAsErrors>true</WarningsAsErrors>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <IncludeSymbols>true</IncludeSymbols>
+    <LangVersion>latest</LangVersion>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <Features>strict</Features>
+    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
+  </PropertyGroup>
+</Project>

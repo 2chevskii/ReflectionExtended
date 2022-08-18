@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Configurations>netstandard2.0;net5.0</Configurations>
+    <Configurations>Debug</Configurations>
     <TargetFramework>net5.0</TargetFramework>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
@@ -24,7 +24,7 @@
 
   <ItemGroup Condition="'$(Configuration)' == 'net5.0'">
     <ProjectReference Include="..\ReflectionExtended\ReflectionExtended.csproj" TargetFramework="net5.0" />
-    
+
   </ItemGroup>
 
   <ItemGroup>
