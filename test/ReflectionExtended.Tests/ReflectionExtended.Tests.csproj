@@ -1,12 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <Configurations>NetStandard2;Net6</Configurations>
     <Configuration Condition="'$(Configuration)' == 'Debug'">Net6</Configuration>
     <TargetFramework>net6.0</TargetFramework>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <InformationalVersion>0.1.0-build.1+36.Branch.build.Sha.69bebddf0c8989fdc16bd4cfb43804f8243b8b79</InformationalVersion>
+    <Version>0.1.0-build0001</Version>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="FluentAssertions" Version="6.7.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
@@ -14,14 +16,8 @@
     <PackageReference Include="MSTest.TestFramework" Version="2.2.8" />
     <PackageReference Include="coverlet.collector" Version="3.1.2" />
   </ItemGroup>
-
   <ItemGroup Label="Main project references">
-    <ProjectReference Condition="'$(Configuration)' == 'NetStandard2' OR '$(Configuration)' == 'Test-NetStandard2'"
-                      Include="$(SourceRoot)src\ReflectionExtended\ReflectionExtended.csproj"
-                      AdditionalProperties="Configuration=Debug;TargetFramework=netstandard2.0" />
-    <ProjectReference Condition="'$(Configuration)' == 'Net6' OR '$(Configuration)' == 'Test-Net6'"
-                      Include="$(SourceRoot)src\ReflectionExtended\ReflectionExtended.csproj"
-                      AdditionalProperties="Configuration=Debug;TargetFramework=net6.0" />
+    <ProjectReference Condition="'$(Configuration)' == 'NetStandard2' OR '$(Configuration)' == 'Test-NetStandard2'" Include="$(SourceRoot)src\ReflectionExtended\ReflectionExtended.csproj" AdditionalProperties="Configuration=Debug;TargetFramework=netstandard2.0" />
+    <ProjectReference Condition="'$(Configuration)' == 'Net6' OR '$(Configuration)' == 'Test-Net6'" Include="$(SourceRoot)src\ReflectionExtended\ReflectionExtended.csproj" AdditionalProperties="Configuration=Debug;TargetFramework=net6.0" />
   </ItemGroup>
-
 </Project>

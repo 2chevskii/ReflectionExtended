@@ -1,42 +1,31 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsPackable Condition="'$(Configuration)' == 'Release'">true</IsPackable>
     <Configurations>Debug;Release</Configurations>
     <TargetFrameworks>netstandard2.0;net6.0</TargetFrameworks>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <InformationalVersion>0.1.0-build.1+36.Branch.build.Sha.69bebddf0c8989fdc16bd4cfb43804f8243b8b79</InformationalVersion>
+    <Version>0.1.0-build0001</Version>
   </PropertyGroup>
-
   <PropertyGroup>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <LicenseFile>LICENSE</LicenseFile>
     <PackageIcon>icon.png</PackageIcon>
   </PropertyGroup>
-
   <ItemGroup>
-    <None Include="$(SourceRoot)LICENSE"
-          PackagePath="LICENSE"
-          CopyToOutputDirectory="PreserveNewest"
-          Pack="true" />
-    <None Include="$(SourceRoot)README.md"
-          PackagePath="README.md"
-          CopyToOutputDirectory="PreserveNewest"
-          Pack="true" />
-    <None Include="$(SourceRoot)assets\images\package-icon.png"
-          PackagePath="icon.png"
-          CopyToOutputDirectory="PreserveNewest"
-          Pack="true" />
+    <None Include="$(SourceRoot)LICENSE" PackagePath="LICENSE" CopyToOutputDirectory="PreserveNewest" Pack="true" />
+    <None Include="$(SourceRoot)README.md" PackagePath="README.md" CopyToOutputDirectory="PreserveNewest" Pack="true" />
+    <None Include="$(SourceRoot)assets\images\package-icon.png" PackagePath="icon.png" CopyToOutputDirectory="PreserveNewest" Pack="true" />
   </ItemGroup>
-
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <Optimize>true</Optimize>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <!-- Allow usage of pattern matching in netstandard2.0 target -->
     <LangVersion>9</LangVersion>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(TargetFramework)' == 'net6.0'">
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
