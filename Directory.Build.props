@@ -1,5 +1,7 @@
 <Project>
 
+  <Import Project="$(SourceRoot)Version.props" />
+
   <PropertyGroup>
     <SourceRoot>$(MSBuildThisFileDirectory)</SourceRoot>
     <GithubRepoUrl>https://github.com/2chevskii/ReflectionExtended</GithubRepoUrl>
@@ -15,11 +17,6 @@
     <RepositoryType>git</RepositoryType>
     <!-- Set IsPackable to false by default -->
     <IsPackable>false</IsPackable>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <VersionPrefix>0.1.0</VersionPrefix>
-    <VersionSuffix>local</VersionSuffix>
   </PropertyGroup>
 
   <PropertyGroup Label="Compilation options">
@@ -40,6 +37,5 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <Features>strict</Features>
   </PropertyGroup>
-
 
 </Project>

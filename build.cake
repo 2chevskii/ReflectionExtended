@@ -1,130 +1,23 @@
-using Path = System.IO.Path;
+#addin nuget:?package=LibGit2Sharp&version=0.27.0-preview-0182&prerelease&loaddependencies=true
 
-readonly string RootDir = Path.GetFullPath(".");
-readonly string MainProjectRoot = Path.GetFullPath("src/ReflectionExtended");
-readonly string TestProjectRoot = Path.GetFullPath("test/ReflectionExtended.Tests");
-readonly string MainProjectPath = Path.Combine(MainProjectRoot, "ReflectionExtended.csproj");
-readonly string TestProjectPath = Path.Combine(TestProjectRoot, "ReflectionExtended.Tests.csproj");
-readonly string ArtifactsRoot = Path.GetFullPath("artifacts");
-readonly string LibArtifactsRoot = Path.Combine(ArtifactsRoot, "lib");
-readonly string PackagesArtifactsRoot = Path.Combine(ArtifactsRoot, "packages");
+#load build/data/build_data.cake;
+#load build/local.cake
+#load build/ci.cake
 
+using LibGit2Sharp;
 
-DotNetBuildSettings GetBaseBuildSettings() {
-  return new DotNetBuildSettings {
-    NoRestore = true,
-    NoDependencies = true,
-    WorkingDirectory = RootDir,
-    NoLogo = true
-  };
-}
+Setup(context => new BuildData(context));
 
-#region Restore
+Teardown<BuildData>((context, data) => {
+  using var repo = data.Git.GetRepository();
 
-Task("restore/main").Does(() => {
-  Information("Restoring main project...");
-  RestoreProject(MainProjectPath);
-});
-Task("restore/test").Does(() => {
-  Information("Restoring test project...");
-  RestoreProject(TestProjectPath);
-});
+  Information("Checkout on paths: {0} => {1}", data.Paths.VersionProps.GetFilename().ToString(), repo.Head.Tip.Sha);
 
-#endregion
-
-#region Build
-
-/*
-Build Tasks:
-    build/all:
-        build/main:
-            build/main:debug:
-                build/main:debug::netstandard2.0
-                build/main:debug::net6.0
-            build/main:release:
-                build/main:release::netstandard2.0
-                build/main:release::net6.0
-        build/test:
-            build/test:netstandard2
-            build/test:net6
-*/
-
-Task("build/main:debug::netstandard2.0").IsDependentOn("restore/main")
-.Does(() => BuildProject(MainProjectPath, "Debug", "netstandard2.0"));
-Task("build/main:debug::net6.0").IsDependentOn("restore/main")
-.Does(() => BuildProject(MainProjectPath, "Debug", "net6.0"));
-Task("build/test:netstandard2").IsDependentOn("restore/test")
-.IsDependentOn("build/main:debug::netstandard2.0")
-.Does(() => BuildProject(TestProjectPath, "NetStandard2", "net6.0"));
-Task("build/test:net6").IsDependentOn("restore/test")
-.IsDependentOn("build/main:debug::net6.0").Does(() => BuildProject(TestProjectPath, "Net6", "net6.0"));
-Task("build/test").IsDependentOn("build/test:netstandard2").IsDependentOn("build/test:net6");
-Task("build/main:debug").IsDependentOn("build/main:debug::netstandard2.0").IsDependentOn("build/main:debug::net6.0");
-
-Task("build/main:release::netstandard2").IsDependentOn("restore/main").Does(() => BuildProject(MainProjectPath, "Release", "netstandard2.0"));
-Task("build/main:release::net6.0").IsDependentOn("restore/main").Does(() => BuildProject(MainProjectPath, "Release", "net6.0"));
-Task("build/main:release").IsDependentOn("build/main:release::netstandard2").IsDependentOn("build/main:release::net6.0");
-Task("build/main").IsDependentOn("build/main:debug").IsDependentOn("build/main:release");
-
-#endregion
-
-#region Test
-
-Task("test/net6").Does(() => {
-  Information("Running project tests targeting {0}", "net6.0");
-
-  DotNetTest(TestProjectPath, new DotNetTestSettings {
-    NoRestore = true,
-    NoBuild = true,
-    Configuration = "Net6"
+  repo.CheckoutPaths(repo.Head.Tip.Sha, new[] {data.Paths.VersionProps.GetFilename().ToString()}, new CheckoutOptions {
+    CheckoutModifiers = CheckoutModifiers.Force
   });
-}).IsDependentOn("build/test:net6");
-Task("test/netstandard2").Does(() => {
-  Information("Running project tests targeting {0}", "netstandard2.0");
-
-  DotNetTest(TestProjectPath, new DotNetTestSettings {
-    NoRestore = true,
-    NoBuild = true,
-    Configuration = "NetStandard2"
-  });
-}).IsDependentOn("build/test:netstandard2");
-Task("test").IsDependentOn("test/netstandard2").IsDependentOn("test/net6");
-
-#endregion
-
-Task("pack").IsDependentOn("build/main:release").Does(() => {
-    DotNetPack(MainProjectPath, new DotNetPackSettings {
-        Configuration = "Release",
-        IncludeSymbols = true,
-        NoBuild = true,
-        NoDependencies = true,
-        WorkingDirectory = RootDir,
-        SymbolPackageFormat = "snupkg",
-        NoRestore= true
-    });
 });
 
-
-
-void BuildProject(string path, string configuration, string framework) {
-  string projectFileName = Path.GetFileName(path);
-  Information("Building project {0}:{1}::{2}", projectFileName, configuration, framework);
-
-  var settings = GetBaseBuildSettings();
-
-  settings.Configuration = configuration;
-  settings.Framework = framework;
-
-  DotNetBuild(path, settings);
-}
-
-void RestoreProject(string path) {
-    string projectFilename = Path.GetFileName(path);
-    Information("Restoring project {0} in {1}", projectFilename, path);
-
-    DotNetRestore(path, new DotNetRestoreSettings {WorkingDirectory = RootDir});
-}
-
-var target = Argument<string>("target", "build");
+var target = Argument("target", "local");
 
 RunTarget(target);

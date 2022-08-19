@@ -5,5 +5,8 @@ _ReSharper.Caches/
 
 bin/
 obj/
+artifacts/
 
 TestResults/
+
+tools/

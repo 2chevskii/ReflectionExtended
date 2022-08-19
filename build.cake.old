@@ -1,0 +1,301 @@
+#addin nuget:?package=Cake.Incubator&version=7.0.0
+#addin nuget:?package=Cake.Json&version=7.0.1
+#addin nuget:?package=Newtonsoft.Json&version=11.0.2
+
+#tool nuget:?package=gitreleasemanager&version=0.13.0
+
+#load build/build_data.cake
+#load build/git.cake
+#load build/utils.cake
+#load build/version.cake
+#load build/tasks/artifacts.cake
+#load build/tasks/build.cake
+#load build/tasks/restore.cake
+#load build/tasks/test.cake
+#load build/tasks/clean.cake
+
+using LibGit2Sharp;
+using System.Linq;
+
+// Setup(context => {
+//   context.Verbose("Running setup action...");
+
+//   BuildData data = BuildData.Create(context);
+//   context.Information("1");
+//   data.Paths.Print();
+// /*
+//   var gitInfo = data.GitInfo;
+//  */
+
+//   // Short helpers
+//   var paths = data.Paths;
+//   var gitInfo = data.GitInfo;
+
+//   // Read current project version from Version.props
+//   data.Version.VersionProps = ReadVersion(context, paths);
+
+//   using (var repo = new Repository(Path.Combine(paths.Root, ".git")))
+//   {
+//     gitInfo.Branch = repo.Head;
+//     gitInfo.Commit = repo.Head.Tip;
+
+//     if(context.AppVeyor().IsRunningOnAppVeyor) {
+//       // substitute for appveyor which performs a checkout therefore resulting to detached HEAD
+
+//       if(!context.AppVeyor().Environment.Repository.Tag.IsTag) {
+//         gitInfo.Branch = repo.Branches[context.AppVeyor().Environment.Repository.Branch];
+//         context.Verbose("Set repo branch from AppVeyor's one: {0}", gitInfo.Branch.FriendlyName);
+//       }
+//     }
+
+//     context.Information("Build branch: {0}", gitInfo.Branch.FriendlyName);
+
+//     context.Information("Build commit: {0} - {1} // {2} at {3}",
+//       gitInfo.Commit.Sha.Substring(0, 7),
+//       gitInfo.Commit.MessageShort,
+//       gitInfo.Commit.Author.Name,
+//       gitInfo.Commit.Author.When
+//     );
+
+//     gitInfo.Tag = repo.Tags.FirstOrDefault(t => t.Target.Sha == gitInfo.Commit.Sha);
+
+//     SemVersion targetVersion = data.Version.VersionProps;
+
+//     if(gitInfo.IsTag) {
+//       context.Information("Build running from tagged commit: {0}", gitInfo.Tag.FriendlyName);
+
+//       try {
+//         data.Version.TargetVersion = GetVersionFromTagName(context, gitInfo.Tag.FriendlyName);
+//       } catch (Exception e) {
+//         throw new CakeException("Failed to read version from tag name", e);
+//       }
+
+//     } else if(!data.GitInfo.IsMaster) {
+//         context.Verbose("Current branch is not master, so appending branch suffix to target version ({0})", gitInfo.Branch.FriendlyName);
+//         var currentTargetVersion = data.Version.VersionProps;
+//         string suffix;
+//         if(string.IsNullOrEmpty(currentTargetVersion.Prerelease)) {
+//           suffix = gitInfo.Branch.FriendlyName;
+//         } else if(currentTargetVersion.Prerelease == gitInfo.Branch.FriendlyName || currentTargetVersion.Prerelease.EndsWith('-' + gitInfo.Branch.FriendlyName)) {
+//           suffix = string.Empty;
+//         } else {
+//           suffix = '-' + gitInfo.Branch.FriendlyName;
+//         }
+
+//         var newTargetVersion = currentTargetVersion.Change(prerelease: currentTargetVersion.Prerelease + suffix);
+//         data.Version.TargetVersion = newTargetVersion;
+//     } else {
+//       context.Verbose("Master branch so not appending any suffixes");
+//     }
+
+//     // WriteVersion(context, paths, data.Version.TargetVersion);
+
+//     /* if(!data.IsLocal) {
+//       int buildNumber = 0;
+
+//       if(context.AppVeyor().IsRunningOnAppVeyor) {
+//         buildNumber = context.AppVeyor().Environment.Build.Number;
+//       } else if(context.GitHubActions().IsRunningOnGitHubActions) {
+//         buildNumber = context.GitHubActions().Environment.Workflow.RunNumber;
+//       } else {
+//         throw new NotImplementedException();
+//       }
+
+//       context.Verbose("Writing build number into target version ({0})", buildNumber.ToString("x4"));
+//     } */
+//       /*
+//           If current build commit is tag:
+//               - bump Version.props to align with Tag
+//               - run tests
+//               - if successful - commit new version with skip ci
+//               - create nuget package and push it
+
+//       */
+//   }
+
+
+//   return data;
+// });
+
+/*
+  - if current commit is tag ->
+
+  - Build main & test projects
+  - Run unit tests
+  - Pack artifacts & zips
+
+*/
+/* Task("ci")
+.WithCriteria<BuildData>(data => !data.IsLocal, "CI build flow is not supported in LOCAL environments")
+.IsDependentOn("clean/main")
+.IsDependentOn("clean/artifacts")
+.Does<BuildData>((context, data) => {
+
+}); */
+
+Task("ci/prepare")
+.WithCriteria<BuildData>(data => !data.IsLocal, "CI build flow is not supported in LOCAL environments")
+.Does<BuildData>((context,data) => {
+  context.Information("Running CI build flow");
+
+  var targetVersion = data.Version.TargetVersion;
+
+  if(context.AppVeyor().IsRunningOnAppVeyor) {
+    context.Verbose("Running on AppVeyor, will derive build number from there");
+    int buildNum = context.AppVeyor().Environment.Build.Number;
+    targetVersion = targetVersion.Change(build: buildNum.ToString("x4"));
+    context.Verbose("Target version changed to version with build number: {0}", targetVersion.ToString());
+
+    context.Verbose("Updating AppVeyor build version {0} -> {1}", context.AppVeyor().Environment.Build.Version, targetVersion.ToString());
+    context.AppVeyor().UpdateBuildVersion(targetVersion.ToString());
+  }
+
+  if(data.GitInfo.IsTag) {
+    context.Information("Creating new commit with updated version {0}...", data.Version.TargetVersion.ToString());
+    WriteVersion(context, data.Paths, data.Version.TargetVersion);
+    using var repo = new Repository(data.Paths.Root);
+    repo.Index.Add(data.Paths.VersionProps);
+    repo.Index.Write();
+    string authorName = context.Environment.GetEnvironmentVariable("GIT_AUTHOR_NAME");
+    if(string.IsNullOrEmpty(authorName)) {
+      throw new CakeException("Failed to read env:GIT_AUTHOR_NAME");
+    }
+
+    string authorEmail = context.Environment.GetEnvironmentVariable("GIT_AUTHOR_EMAIL");
+    if(string.IsNullOrEmpty(authorEmail)) {
+      throw new CakeException("Failed to read env:GIT_AUTHOR_EMAIL");
+    }
+
+    DateTime commitDate = DateTime.Now;
+    Signature author = new Signature(authorName, authorEmail, commitDate);
+    repo.Commit($"[skip ci] Bump project version {data.Version.VersionProps} -> {data.Version.TargetVersion}", author, author);
+    // var remote = repo.Network.Remotes[data.GitInfo.Branch.RemoteName];
+
+    string accessToken = context.Environment.GetEnvironmentVariable("GITHUB_ACCESS_TOKEN");
+    if(string.IsNullOrEmpty(accessToken)) {
+      throw new CakeException("Failed to read env:GITHUB_ACCESS_TOKEN");
+    }
+
+    var credentials = new UsernamePasswordCredentials {
+      Username = authorEmail,
+      Password = accessToken
+    };
+
+    var options = new PushOptions {
+      CredentialsProvider = (_,_,_) => credentials
+    };
+
+    repo.Network.Push(repo.Head, options);
+    context.Verbose("All changes pushed to the remote");
+  }
+
+  WriteVersion(context, data.Paths, targetVersion);
+});
+
+Task("ci").WithCriteria<BuildData>(data => !data.IsLocal)
+          .IsDependentOn("ci/prepare")
+          .IsDependentOn("clean/main")
+          .IsDependentOn("clean/artifacts")
+          .IsDependentOn("artifacts/zip:main")
+          .IsDependentOn("artifacts/nuget-pack:main")
+          .Does<BuildData>((context, data) => {
+            if(context.AppVeyor().IsRunningOnAppVeyor) {
+              context.Information("CI build running in AppVeyor, pushing generated build artifacts...");
+
+              var libsGlob = Path.Combine(data.Paths.ArtifactsLib, "*.zip");
+              context.Verbose("Discovering zip artifacts at path: {0}", libsGlob);
+
+              foreach(var f in context.GetFiles(libsGlob)) {
+                context.Verbose("Pushing artifact: {0} => {1}", f.FullPath, f.GetFilename());
+                context.AppVeyor().UploadArtifact(f, new AppVeyorUploadArtifactsSettings {
+                    DeploymentName = f.GetFilename().ToString()
+                });
+              }
+
+              var pkgGlob = Path.Combine(data.Paths.ArtifactsPackages, "*.*(s)nupkg");
+              context.Verbose("Discovering NuGet artifacts at path: {0}", pkgGlob);
+
+              foreach(var f in context.GetFiles(pkgGlob)) {
+                context.Verbose("Pushing artifact: {0} => {1}", f.FullPath, f.GetFilename());
+                context.AppVeyor().UploadArtifact(f, new AppVeyorUploadArtifactsSettings {
+                  DeploymentName = f.GetFilename().ToString(),
+                  ArtifactType = AppVeyorUploadArtifactType.NuGetPackage
+                });
+              }
+            } else {
+              context.Information("Skipping artifacts push stage due to unknown CI environment");
+            }
+
+            if(data.GitInfo.IsTag) {
+              context.Information("Due to tagged build will create GitHub release named {0}", data.GitInfo.Tag.FriendlyName);
+
+              var owner = context.Environment.GetEnvironmentVariable("GIT_AUTHOR_EMAIL");
+              if(string.IsNullOrEmpty(owner)) {
+                throw new CakeException("Failed to get env:GIT_AUTHOR_EMAIL for GitHub release creation");
+              }
+
+              var accessToken = context.Environment.GetEnvironmentVariable("GITHUB_ACCESS_TOKEN");
+              if(string.IsNullOrEmpty(accessToken)) {
+                throw new CakeException("Failed to get env:GITHUB_ACCESS_TOKEN for GitHub release creation");
+              }
+
+              context.GitReleaseManagerCreate(
+                accessToken,
+                owner,
+                "2chevskii/ReflectionExtended",
+                new GitReleaseManagerCreateSettings {
+                  Name = data.GitInfo.Tag.FriendlyName,
+                  Milestone = data.GitInfo.Tag.FriendlyName.Trim().TrimStart('v'),
+                  Prerelease = !string.IsNullOrEmpty(data.Version.TargetVersion.Prerelease),
+                  TargetDirectory = data.Paths.Root,
+                  TargetCommitish = data.GitInfo.Branch.FriendlyName,
+                  Assets = string.Join(",",
+                    from f in GetFiles(
+                      Path.Combine(data.Paths.ArtifactsLib, "*.zip")
+                    ).Concat(
+                      GetFiles(
+                        Path.Combine(data.Paths.ArtifactsPackages, "*.*(s)nupkg")
+                      )
+                    )
+                    select f.FullPath
+                  ),
+                  Verbose = true
+                }
+              );
+              context.GitReleaseManagerPublish(
+                accessToken,
+                owner,
+                "2chevskii/ReflectionExtended",
+                data.GitInfo.Tag.FriendlyName,
+                new GitReleaseManagerPublishSettings {Verbose = true}
+              );
+            }
+          });
+
+Task("local/prepare")
+.WithCriteria<BuildData>(data => data.IsLocal, "LOCAL build flow is not supported in CI environments")
+.Does<BuildData>((context, data) => {
+  context.Information("Running LOCAL build flow");
+
+  var targetVersion = data.Version.TargetVersion;
+  context.Information("Preparing current build version: {0}", targetVersion);
+  WriteVersion(context, data.Paths, targetVersion);
+});
+
+Task("local").IsDependentOn("local/prepare")
+             .IsDependentOn("clean/main")
+             .IsDependentOn("clean/artifacts")
+             .IsDependentOn("artifacts/zip:main")
+             .IsDependentOn("artifacts/nuget-pack:main");
+
+/* .Does<BuildData>((context,data) => {
+
+
+
+});
+*/
+
+
+var target = Argument("target", "local");
+
+RunTarget(target);

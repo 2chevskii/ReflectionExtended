@@ -1,0 +1,6 @@
+*          text=auto
+*.cs       diff=csharp
+*.cake     diff=csharp
+*.jpg      binary
+*.png      binary
+*.psd      binary
