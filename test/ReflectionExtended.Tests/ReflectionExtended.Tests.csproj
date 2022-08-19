@@ -24,8 +24,4 @@
                       AdditionalProperties="Configuration=Debug;TargetFramework=net6.0" />
   </ItemGroup>
 
-  <Target Name="CfgMessage" BeforeTargets="Restore">
-    <Message Text="$(Configuration)" Importance="high" />
-  </Target>
-
 </Project>
