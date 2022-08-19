@@ -1,10 +1,5 @@
 <Project>
 
-  <ItemGroup Condition="'$(IsPackable)' == 'true'">
-    <!-- Include README and LICENSE file into generated package -->
-    
-  </ItemGroup>
-
   <PropertyGroup Label="Output paths configuration">
     <OutputPath>bin\$(Configuration)\$(TargetFramework)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\$(TargetFramework)\</IntermediateOutputPath>

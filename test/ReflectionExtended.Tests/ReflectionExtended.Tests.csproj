@@ -2,9 +2,9 @@
 
   <PropertyGroup>
     <IsPackable>false</IsPackable>
-    <Configurations>Standard2;Net5</Configurations>
-    <Configuration Condition="'$(Configuration)' == 'Debug'">Standard2</Configuration>
-    <TargetFramework>net5.0</TargetFramework>
+    <Configurations>NetStandard2;Net6</Configurations>
+    <Configuration Condition="'$(Configuration)' == 'Debug'">Net6</Configuration>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,18 +15,17 @@
     <PackageReference Include="coverlet.collector" Version="3.1.2" />
   </ItemGroup>
 
-  <!-- <ItemGroup>
-    <ProjectReference Include="..\..\src\ReflectionExtended\ReflectionExtended.csproj" SetConfiguration="Debug"/>
-  </ItemGroup> -->
-
   <ItemGroup Label="Main project references">
-    <ProjectReference Condition="'$(Configuration)' == 'Standard2'"
-                      Include="..\..\src\ReflectionExtended\ReflectionExtended.csproj"
+    <ProjectReference Condition="'$(Configuration)' == 'NetStandard2' OR '$(Configuration)' == 'Test-NetStandard2'"
+                      Include="$(SourceRoot)src\ReflectionExtended\ReflectionExtended.csproj"
                       AdditionalProperties="Configuration=Debug;TargetFramework=netstandard2.0" />
-    <ProjectReference Condition="'$(Configuration)' == 'Net5'"
-                      Include="..\..\src\ReflectionExtended\ReflectionExtended.csproj"
-                      AdditionalProperties="Configuration=Debug;TargetFramework=net5.0" />
-    <!-- <ProjectReference Condition="'$(Configuration)' != 'Standard2' AND '$(Configuration)' != 'Net5'" Include="..\..\src\ReflectionExtended\ReflectionExtended.csproj" /> -->
+    <ProjectReference Condition="'$(Configuration)' == 'Net6' OR '$(Configuration)' == 'Test-Net6'"
+                      Include="$(SourceRoot)src\ReflectionExtended\ReflectionExtended.csproj"
+                      AdditionalProperties="Configuration=Debug;TargetFramework=net6.0" />
   </ItemGroup>
+
+  <Target Name="CfgMessage" BeforeTargets="Restore">
+    <Message Text="$(Configuration)" Importance="high" />
+  </Target>
 
 </Project>

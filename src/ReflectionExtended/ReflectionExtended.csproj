@@ -3,7 +3,7 @@
   <PropertyGroup>
     <IsPackable Condition="'$(Configuration)' == 'Release'">true</IsPackable>
     <Configurations>Debug;Release</Configurations>
-    <TargetFrameworks>netstandard2.0;net5.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net6.0</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -37,7 +37,7 @@
     <LangVersion>9</LangVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net5.0'">
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net6.0'">
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
   </PropertyGroup>
