@@ -2,8 +2,13 @@
 
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
     <!-- Include README and LICENSE file into generated package -->
-    <None Include="$(LicenseFile)" PackagePath="$([System.IO.Path]::GetFileName('$(LicenseFile)'))" Pack="true" />
-    <None Include="$(PackageReadmeFile)" PackagePath="$([System.IO.Path]::GetFileName('$(PackageReadmeFile)'))" Pack="true" />
+    
   </ItemGroup>
+
+  <PropertyGroup Label="Output paths configuration">
+    <OutputPath>bin\$(Configuration)\$(TargetFramework)\</OutputPath>
+    <IntermediateOutputPath>obj\$(Configuration)\$(TargetFramework)\</IntermediateOutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
 
 </Project>

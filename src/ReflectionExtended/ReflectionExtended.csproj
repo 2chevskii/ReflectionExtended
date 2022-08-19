@@ -1,14 +1,35 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net5.0;</TargetFrameworks>
+    <IsPackable>true</IsPackable>
     <Configurations>Debug;Release</Configurations>
+    <TargetFrameworks>netstandard2.0;net5.0</TargetFrameworks>
   </PropertyGroup>
 
-    <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-        <!-- Allow usage of pattern matching in netstandard2.0 target -->
-        <LangVersion>9</LangVersion>
-    </PropertyGroup>
+  <ItemGroup>
+    <None Include="$(LicenseFile)"
+          PackagePath="\"
+          CopyToOutputDirectory="Always"
+          Pack="true" />
+    <None Include="$(PackageReadmeFile)"
+          PackagePath="\"
+          CopyToOutputDirectory="Always"
+          Pack="true" />
+    <None Include="$(PackageIcon)"
+          PackagePath="\"
+          Link="icon.png"
+          CopyToOutputDirectory="Always"
+          Pack="true" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <!-- Allow usage of pattern matching in netstandard2.0 target -->
+    <LangVersion>9</LangVersion>
+  </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net5.0'">
     <Nullable>disable</Nullable>
