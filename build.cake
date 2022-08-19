@@ -1,14 +1,4 @@
 using Path = System.IO.Path;
-/*
-  Target list:
-    - build
-    - test
-    - pack
-    - publish
-    - ci
-    - local
-
-*/
 
 readonly string RootDir = Path.GetFullPath(".");
 readonly string MainProjectRoot = Path.GetFullPath("src/ReflectionExtended");
@@ -22,25 +12,12 @@ readonly string PackagesArtifactsRoot = Path.Combine(ArtifactsRoot, "packages");
 
 DotNetBuildSettings GetBaseBuildSettings() {
   return new DotNetBuildSettings {
-    NoRestore=true,
-    NoDependencies=true,
-    WorkingDirectory=RootDir,
+    NoRestore = true,
+    NoDependencies = true,
+    WorkingDirectory = RootDir,
     NoLogo = true
   };
 }
-
-/*
-Tasks:
-  restore/main
-  restore/test
-
-  build/main:debug
-  build/main:release
-  build/test:netstandard2.0
-  build/test:net6.0
-
-
-*/
 
 #region Restore
 
@@ -81,11 +58,13 @@ Task("build/test:netstandard2").IsDependentOn("restore/test")
 .Does(() => BuildProject(TestProjectPath, "NetStandard2", "net6.0"));
 Task("build/test:net6").IsDependentOn("restore/test")
 .IsDependentOn("build/main:debug::net6.0").Does(() => BuildProject(TestProjectPath, "Net6", "net6.0"));
+Task("build/test").IsDependentOn("build/test:netstandard2").IsDependentOn("build/test:net6");
 Task("build/main:debug").IsDependentOn("build/main:debug::netstandard2.0").IsDependentOn("build/main:debug::net6.0");
 
 Task("build/main:release::netstandard2").IsDependentOn("restore/main").Does(() => BuildProject(MainProjectPath, "Release", "netstandard2.0"));
 Task("build/main:release::net6.0").IsDependentOn("restore/main").Does(() => BuildProject(MainProjectPath, "Release", "net6.0"));
 Task("build/main:release").IsDependentOn("build/main:release::netstandard2").IsDependentOn("build/main:release::net6.0");
+Task("build/main").IsDependentOn("build/main:debug").IsDependentOn("build/main:release");
 
 #endregion
 
@@ -112,6 +91,20 @@ Task("test/netstandard2").Does(() => {
 Task("test").IsDependentOn("test/netstandard2").IsDependentOn("test/net6");
 
 #endregion
+
+Task("pack").IsDependentOn("build/main:release").Does(() => {
+    DotNetPack(MainProjectPath, new DotNetPackSettings {
+        Configuration = "Release",
+        IncludeSymbols = true,
+        NoBuild = true,
+        NoDependencies = true,
+        WorkingDirectory = RootDir,
+        SymbolPackageFormat = "snupkg",
+        NoRestore= true
+    });
+});
+
+
 
 void BuildProject(string path, string configuration, string framework) {
   string projectFileName = Path.GetFileName(path);
