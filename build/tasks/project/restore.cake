@@ -1,4 +1,4 @@
-#load ../../build_data.cake
+#load "../../build_data.cake"
 
 Task("restore/main").Does<BuildData>(data => {
   DotNetRestore(data.Paths.MainProjectRoot.FullPath, new DotNetRestoreSettings {

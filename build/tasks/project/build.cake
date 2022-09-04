@@ -1,5 +1,5 @@
-#load ../../build_data.cake
-#load restore.cake
+#load "../../build_data.cake"
+#load "restore.cake"
 
 /*
 Build Tasks:

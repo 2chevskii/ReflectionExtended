@@ -1,4 +1,4 @@
-#load ../../build_data.cake
+#load "../../build_data.cake"
 
 Task("clean/main").Does<BuildData>(data => {
   var binDir = data.Paths.MainProjectRoot.Combine("bin");
@@ -22,6 +22,9 @@ Task("clean/test").Does<BuildData>(data => {
   EnsureDirectoryDoesNotExist(objDir);
 });
 
+Task("clean/projects").IsDependentOn("clean/main")
+                      .IsDependentOn("clean/test");
+
 Task("clean/artifacts:lib").Does<BuildData>(data => {
   Verbose("Cleaning artifacts lib directory: {0}", data.Paths.ArtifactsLib);
 
@@ -35,7 +38,7 @@ Task("clean/artifacts:lib").Does<BuildData>(data => {
 Task("clean/artifacts:packages").Does<BuildData>(data => {
   Verbose("Cleaning artifacts packages directory: {0}", data.Paths.ArtifactsPackages);
 
-  foreach(var file in GetFiles(data.Paths.ArtifactsPackages.Combine("*.?(s)nupkg").FullPath)) {
+  foreach(var file in GetFiles(data.Paths.ArtifactsPackages.Combine("*.{nupkg,snupkg}").FullPath)) {
     Verbose("Deleting file: {0}", file.FullPath);
 
     DeleteFile(file);

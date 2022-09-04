@@ -1,5 +1,5 @@
-#load ../build_data.cake
-#load project/build.cake
+#load "../build_data.cake"
+#load "project/build.cake"
 
 Task("artifacts/zip:netstandard2.0").IsDependentOn("build/main:release::netstandard2.0")
                                     .Does<BuildData>(data => {
@@ -42,10 +42,36 @@ Task("artifacts/pack").IsDependentOn("build/main:release")
 
 Task("artifacts/push:appveyor").IsDependentOn("artifacts/zip")
                                .IsDependentOn("artifacts/pack")
-                               .Does<BuildData>(data => throw new NotImplementedException());
+                               .WithCriteria(context => context.AppVeyor().IsRunningOnAppVeyor, "How am I supposed to upload artifacts to AppVeyor while not running build there?!")
+                               .Does<BuildData>(data => {
+                                var stdZip = data.Paths.ArtifactsLib.CombineWithFilePath("netstandard2.0.zip");
+                                AppVeyor.UploadArtifact(stdZip,
+                                  new AppVeyorUploadArtifactsSettings {
+                                  DeploymentName = stdZip.GetFilename().FullPath
+                                });
+                                var net6Zip = data.Paths.ArtifactsLib.CombineWithFilePath("net6.0.zip");
+                                AppVeyor.UploadArtifact(net6Zip,
+                                  new AppVeyorUploadArtifactsSettings {
+                                  DeploymentName = net6Zip.GetFilename().FullPath
+                                });
+
+                                foreach(var pkg in GetFiles(data.Paths.ArtifactsPackages.CombineWithFilePath("*.{nupkg,snupkg}").FullPath)) {
+                                  AppVeyor.UploadArtifact(pkg, new AppVeyorUploadArtifactsSettings {
+                                    DeploymentName = pkg.GetFilename().FullPath
+                                  });
+                                }
+                               });
 Task("artifacts/push:nuget").IsDependentOn("artifacts/pack")
-                            .Does<BuildData>(data => throw new NotImplementedException());
+                            .WithCriteria<BuildData>(data => throw new NotImplementedException(), "Pushing NuGet packages is only allowed while running tag build")
+                            .WithCriteria(context => context.AppVeyor().IsRunningOnAppVeyor, "Pushing artifacts to NuGet is only allowed from AppVeyor") // + when release
+                            .Does<BuildData>(data => {
+                              foreach(var pkg in GetFiles(data.Paths.ArtifactsPackages.CombineWithFilePath("*.nupkg").FullPath)) {
+
+                              }
+                            });
 
 Task("artifacts/push:github").IsDependentOn("artifacts/zip")
                              .IsDependentOn("artifacts/pack")
+                             .WithCriteria<BuildData>(data => throw new NotImplementedException(), "Pushing artifacts to GitHub release is only allowed while running tag build")
+                             .WithCriteria(context => context.AppVeyor().IsRunningOnAppVeyor, "Pushing artifacts to GitHub release is only allowed from AppVeyor")
                              .Does<BuildData>(data => throw new NotImplementedException());

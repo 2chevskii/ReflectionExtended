@@ -1,4 +1,5 @@
 #load "../../build_data.cake"
+#load "build.cake"
 
 Task("test/netstandard2").IsDependentOn("build/main:debug::netstandard2.0")
                          .IsDependentOn("build/test:netstandard2")
@@ -9,7 +10,8 @@ Task("test/netstandard2").IsDependentOn("build/main:debug::netstandard2.0")
                             NoBuild = true,
                             NoRestore = true,
                             NoLogo = true,
-                            WorkingDirectory = data.Paths.Root
+                            WorkingDirectory = data.Paths.Root,
+                            ResultsDirectory = data.Paths.Root.Combine("TestResults").Combine("NetStandard2")
                           });
                          });
 Task("test/net6").IsDependentOn("build/main:debug::net6.0")
@@ -21,6 +23,7 @@ Task("test/net6").IsDependentOn("build/main:debug::net6.0")
                     NoBuild = true,
                     NoRestore = true,
                     NoLogo = true,
-                    WorkingDirectory = data.Paths.Root
+                    WorkingDirectory = data.Paths.Root,
+                    ResultsDirectory = data.Paths.Root.Combine("TestResults").Combine("Net6")
                   });
                  });
