@@ -16,15 +16,15 @@ public class BuildData {
     "Version.props: {1}\n" +
     "RELEASE_NOTES.md: {2}\n" +
     "Artifacts:\n" +
-    "\tLibs: {3}\n" +
-    "\tPackages: {4}\n" +
+    "  Libs: {3}\n" +
+    "  Packages: {4}\n" +
     "Projects:\n" +
-    "\tMain:\n" +
-    "\t\tRoot: {5}\n" +
-    "\t\tFile: {6}\n" +
-    "\tTests:\n" +
-    "\t\tRoot: {7}\n" +
-    "\t\tFile: {8}",
+    "  Main:\n" +
+    "    Root: {5}\n" +
+    "    File: {6}\n" +
+    "  Tests:\n" +
+    "    Root: {7}\n" +
+    "    File: {8}",
     Paths.Root,
     Paths.VersionProps,
     Paths.ReleaseNotes,
@@ -82,6 +82,6 @@ public class VersionData {
   public static void WriteVersionProps(ICakeContext context, FilePath path, SemVersion version) {
     var strVersion = version.ToString();
 
-    context.XmlPoke(path, VersionXPath, strVersion);
+    context.XmlPoke(path, VersionPropsXPath, strVersion);
   }
 }
