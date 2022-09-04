@@ -42,7 +42,8 @@ Task("artifacts/pack").IsDependentOn("build/main:release")
 
 Task("artifacts/push:appveyor").IsDependentOn("artifacts/zip")
                                .IsDependentOn("artifacts/pack")
-                               .WithCriteria(context => context.AppVeyor().IsRunningOnAppVeyor, "How am I supposed to upload artifacts to AppVeyor while not running build there?!")
+                               .WithCriteria(context => context.AppVeyor().IsRunningOnAppVeyor,
+                               "How am I supposed to upload artifacts to AppVeyor while not running build there?!")
                                .Does<BuildData>(data => {
                                 var stdZip = data.Paths.ArtifactsLib.CombineWithFilePath("netstandard2.0.zip");
                                 AppVeyor.UploadArtifact(stdZip,

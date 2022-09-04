@@ -9,7 +9,7 @@ using SemVersion = Semver.SemVersion;
 public class BuildData {
   public Paths Paths;
   public VersionData Version;
-
+  public GitInfo Git;
 
   public BuildData(ISetupContext context) {
     Paths = new Paths(context.Environment.WorkingDirectory);
@@ -39,6 +39,15 @@ public class BuildData {
 
     Version = new VersionData(VersionData.ReadVersionProps(context, Paths.VersionProps));
     context.Verbose("Version.props read version: {0}", Version.VersionProps);
+
+    Git = new GitInfo(context, this);
+    context.Verbose("Build commit: {0}", Git.CommitHash);
+    context.Information("Commit info: {0} - {1} ({2} at {3})",
+      Git.CommitHash[..8],
+      Git.CommitMessage,
+      Git.Commit.Author.Name,
+      Git.Commit.Author.When
+    );
   }
 }
 
@@ -106,8 +115,9 @@ public class VersionData {
 }
 
 public class GitInfo {
-  private readonly DirectoryPath _root;
+  private readonly Repository _repo;
   public string CommitHash;
+  public string CommitMessage;
   public Commit Commit;
   public string BranchName;
   public Branch Branch;
@@ -115,12 +125,13 @@ public class GitInfo {
   public string TagName;
 
   public GitInfo(ISetupContext context, BuildData data) {
-    _root = data.Paths.Root;
+    _repo = new Repository(data.Paths.Root.FullPath);
 
-    using var repo = GetRepository();
+    var repo = GetRepository();
     var head = repo.Head;
     Commit = head.Tip;
     CommitHash = Commit.Sha;
+    CommitMessage = Commit.MessageShort;
 
     Tag = repo.Tags.FirstOrDefault(t => t.Target.Sha == CommitHash);
     if(Tag is not null) {
@@ -137,7 +148,11 @@ public class GitInfo {
     }
   }
 
-  public Repository GetRepository() => new(_root.FullPath);
+  ~GitInfo() {
+    _repo.Dispose();
+  }
+
+  public Repository GetRepository() => _repo;
 
   public IEnumerable<Commit> GetCommitsForReleaseNotes() {
     using var repo = GetRepository();
