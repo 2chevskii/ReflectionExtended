@@ -1,6 +1,8 @@
 #addin nuget:?package=semver&version=2.0.4
+#addin nuget:?package=LibGit2Sharp&version=0.27.0-preview-0182&prerelease&loaddependencies=true
 
 using Semver;
+using LibGit2Sharp;
 
 using SemVersion = Semver.SemVersion;
 
@@ -83,5 +85,93 @@ public class VersionData {
     var strVersion = version.ToString();
 
     context.XmlPoke(path, VersionPropsXPath, strVersion);
+  }
+
+  public static SemVersion GetTagVersion(GitInfo git) {
+    if(git.Tag is null)
+      throw new InvalidOperationException("Cannot get tag version: no tag");
+
+    return SemVersion.Parse(git.TagName.Trim(' ', '\t').TrimStart('v'));
+  }
+
+  public static SemVersion SetBranchSuffix(GitInfo git, SemVersion version) {
+    if(git.Tag is not null || git.BranchName is "master" || version.Prerelease.EndsWith(git.BranchName)) {
+      return version;
+    } else if(version.Prerelease.Length is 0) {
+      return version.Change(prerelease: git.BranchName);
+    } else {
+      return version.Change(prerelease: version.Prerelease + "-" + git.BranchName);
+    }
+  }
+}
+
+public class GitInfo {
+  private readonly DirectoryPath _root;
+  public string CommitHash;
+  public Commit Commit;
+  public string BranchName;
+  public Branch Branch;
+  public Tag Tag;
+  public string TagName;
+
+  public GitInfo(ISetupContext context, BuildData data) {
+    _root = data.Paths.Root;
+
+    using var repo = GetRepository();
+    var head = repo.Head;
+    Commit = head.Tip;
+    CommitHash = Commit.Sha;
+
+    Tag = repo.Tags.FirstOrDefault(t => t.Target.Sha == CommitHash);
+    if(Tag is not null) {
+      TagName = Tag.FriendlyName;
+    }
+    else {
+      if(context.AppVeyor().IsRunningOnAppVeyor) {
+        BranchName = context.AppVeyor().Environment.Repository.Branch;
+        Branch = repo.Branches[BranchName]; // Because AppVeyor does checkout on commit, HEAD will not be at any branch
+      } else {
+        Branch = head;
+        BranchName = head.FriendlyName;
+      }
+    }
+  }
+
+  public Repository GetRepository() => new(_root.FullPath);
+
+  public IEnumerable<Commit> GetCommitsForReleaseNotes() {
+    using var repo = GetRepository();
+
+    IEnumerable<Commit> result;
+
+    if(repo.Tags.Count() < 2) {
+      result = from commit in Branch.Commits
+               where commit.Author.When <= Commit.Author.When
+               select commit;
+    } else {
+      var tagVersions = from t in repo.Tags
+                        select new {Tag = t, Version = SemVersion.Parse(t.FriendlyName.Trim(' ', '\t').TrimStart('v'))} into tv
+                        orderby tv.Version descending
+                        select tv;
+
+      if(Tag is not null) {
+        var tagVersion = SemVersion.Parse(TagName.Trim(' ', '\t').TrimStart('v'));
+        var prev = tagVersions.Where(tv => tv.Version < tagVersion).First();
+        var prevCommit = (Commit)prev.Tag.Target;
+
+        result = from commit in repo.Commits
+                 where commit.Author.When <= Commit.Author.When && commit.Author.When > prevCommit.Author.When
+                 select commit;
+      } else {
+        result = from commit in Branch.Commits
+                 where commit.Author.When > (tagVersions.First().Tag.Target as Commit).Author.When
+                 select commit;
+      }
+    }
+
+    return from commit in result
+             where !commit.MessageShort.Contains("[skip notes]")
+             orderby commit.Author.When descending
+             select commit;
   }
 }
