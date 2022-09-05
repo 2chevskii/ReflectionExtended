@@ -3,7 +3,6 @@
 
 using Semver;
 using LibGit2Sharp;
-
 using SemVersion = Semver.SemVersion;
 
 public class BuildData {
@@ -148,14 +147,10 @@ public class GitInfo {
     }
   }
 
-  ~GitInfo() {
-    _repo.Dispose();
-  }
-
   public Repository GetRepository() => _repo;
 
   public IEnumerable<Commit> GetCommitsForReleaseNotes() {
-    using var repo = GetRepository();
+    var repo = GetRepository();
 
     IEnumerable<Commit> result;
 

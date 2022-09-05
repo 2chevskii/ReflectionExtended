@@ -1,4 +1,4 @@
-#load "../../build_data.cake"
+#load "../build_data.cake"
 
 Task("clean/main").Does<BuildData>(data => {
   var binDir = data.Paths.MainProjectRoot.Combine("bin");

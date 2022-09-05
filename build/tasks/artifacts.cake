@@ -66,9 +66,11 @@ Task("artifacts/push:nuget").IsDependentOn("artifacts/pack")
                             .WithCriteria<BuildData>(data => throw new NotImplementedException(), "Pushing NuGet packages is only allowed while running tag build")
                             .WithCriteria(context => context.AppVeyor().IsRunningOnAppVeyor, "Pushing artifacts to NuGet is only allowed from AppVeyor") // + when release
                             .Does<BuildData>(data => {
-                              foreach(var pkg in GetFiles(data.Paths.ArtifactsPackages.CombineWithFilePath("*.nupkg").FullPath)) {
 
-                              }
+
+                              // foreach(var pkg in GetFiles(data.Paths.ArtifactsPackages.CombineWithFilePath("*.nupkg").FullPath)) {
+
+                              // }
                             });
 
 Task("artifacts/push:github").IsDependentOn("artifacts/zip")
