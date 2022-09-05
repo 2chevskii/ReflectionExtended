@@ -1,6 +1,7 @@
 #addin nuget:?package=semver&version=2.0.4
 #addin nuget:?package=LibGit2Sharp&version=0.27.0-preview-0182&prerelease&loaddependencies=true
 
+using System.Linq;
 using Semver;
 using LibGit2Sharp;
 using SemVersion = Semver.SemVersion;
@@ -99,7 +100,15 @@ public class VersionData {
     if(git.Tag is null)
       throw new InvalidOperationException("Cannot get tag version: no tag");
 
-    return SemVersion.Parse(git.TagName.Trim(' ', '\t').TrimStart('v'));
+    return ParseTagVersion(git.TagName);
+  }
+
+  public static SemVersion ParseTagVersion(Tag tag) {
+    return ParseTagVersion(tag.FriendlyName);
+  }
+
+  public static SemVersion ParseTagVersion(string tagName) {
+    return SemVersion.Parse(tagName.Trim(' ', '\t').TrimStart('v'));
   }
 
   public static SemVersion SetBranchSuffix(GitInfo git, SemVersion version) {
@@ -126,20 +135,19 @@ public class GitInfo {
   public GitInfo(ISetupContext context, BuildData data) {
     _repo = new Repository(data.Paths.Root.FullPath);
 
-    var repo = GetRepository();
-    var head = repo.Head;
+    var head = _repo.Head;
     Commit = head.Tip;
     CommitHash = Commit.Sha;
     CommitMessage = Commit.MessageShort;
 
-    Tag = repo.Tags.FirstOrDefault(t => t.Target.Sha == CommitHash);
+    Tag = _repo.Tags.FirstOrDefault(t => t.Target.Sha == CommitHash);
     if(Tag is not null) {
       TagName = Tag.FriendlyName;
     }
     else {
       if(context.AppVeyor().IsRunningOnAppVeyor) {
         BranchName = context.AppVeyor().Environment.Repository.Branch;
-        Branch = repo.Branches[BranchName]; // Because AppVeyor does checkout on commit, HEAD will not be at any branch
+        Branch = _repo.Branches[BranchName]; // Because AppVeyor does checkout on commit, HEAD will not be at any branch
       } else {
         Branch = head;
         BranchName = head.FriendlyName;
@@ -150,7 +158,45 @@ public class GitInfo {
   public Repository GetRepository() => _repo;
 
   public IEnumerable<Commit> GetCommitsForReleaseNotes() {
-    var repo = GetRepository();
+    IEnumerable<Commit> result;
+
+    if(!_repo.Tags.Any()) {
+      result = from commit in Branch.Commits
+               where commit.Author.When <= Commit.Author.When
+               select commit;
+    } else {
+      var tagVersions = from tag in _repo.Tags
+                        select new {Tag = tag, Version = VersionData.ParseTagVersion(tag)} into tv
+                        orderby tv.Version descending
+                        select tv;
+
+      if(Tag is not null) {
+        var currentTagVersion =  VersionData.GetTagVersion(this);
+        var since = tagVersions.Where(tv => tv.Version < currentTagVersion).FirstOrDefault();
+        if(since is not null) {
+          result = from commit in _repo.Commits
+                   where commit.Author.When <= Tag.Target.Peel<Commit>().Author.When &&
+                   commit.Author.When > since.Tag.Target.Peel<Commit>().Author.When
+                   select commit;
+        } else {
+          result = from commit in _repo.Commits
+                   where commit.Author.When <= Tag.Target.Peel<Commit>().Author.When
+                   select commit;
+        }
+      } else {
+        var since = tagVersions.First();
+        result = from commit in Branch.Commits
+                 where commit.Author.When <= Commit.Author.When && commit.Author.When > since.Tag.Target.Peel<Commit>().Author.When
+                 select commit;
+      }
+    }
+
+    return from commit in result
+           where !commit.MessageShort.Contains("[skip notes]")
+           orderby commit.Author.When descending
+           select commit;
+
+    /* var repo = GetRepository();
 
     IEnumerable<Commit> result;
 
@@ -183,5 +229,6 @@ public class GitInfo {
              where !commit.MessageShort.Contains("[skip notes]")
              orderby commit.Author.When descending
              select commit;
+    */
   }
 }
