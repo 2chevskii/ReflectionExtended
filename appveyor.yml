@@ -1,12 +1,23 @@
 image: Visual Studio 2022
 version: '#{build}'
-clone_depth: 1
+build: false
 build_script:
-  - ps: ./build.ps1 --target=ci --verbosity=verbose
-environment:
-  global:
-    GIT_AUTHOR_NAME: 2chevskii
-    GIT_AUTHOR_EMAIL:
-      secure: b4TAg5BteaKCGgrG40xWAmDDPL3isCh+dqUjDV+kafQ=
-    GITHUB_ACCESS_TOKEN:
-      secure: P0AX0tDKPPPeGe5jsg+LRZvPN7N5sGEX2B3Jmqw5B8hTxiZS8L+S2upPMjOCS2cF
+  - cmd: echo "Build script is not implemented yet"
+test: false
+deploy: off
+artifacts:
+  - path: artifacts/lib/netstandard2.0.zip
+    name: netstandard2.0.zip
+  - path: artifacts/lib/net6.0.zip
+    name: net6.0.zip
+  - path: artifacts/packages/*.{nupkg|snupkg}
+
+# build_script:
+#   - ps: ./build.ps1 --target=ci --verbosity=verbose
+# environment:
+#   global:
+#     GIT_AUTHOR_NAME: 2chevskii
+#     GIT_AUTHOR_EMAIL:
+#       secure: b4TAg5BteaKCGgrG40xWAmDDPL3isCh+dqUjDV+kafQ=
+#     GITHUB_ACCESS_TOKEN:
+#       secure: P0AX0tDKPPPeGe5jsg+LRZvPN7N5sGEX2B3Jmqw5B8hTxiZS8L+S2upPMjOCS2cF
