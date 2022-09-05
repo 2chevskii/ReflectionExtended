@@ -79,6 +79,10 @@ public class VersionData {
   public const string VersionPropsXPath = "//Version";
 
   public SemVersion VersionProps;
+  public SemVersion TagVersion;
+  public SemVersion TargetVersion;
+  public SemVersion BranchVersion;
+  public SemVersion TargetVersionWithBuildNumber;
 
   public VersionData(SemVersion versionProps) {
     VersionProps = versionProps;
@@ -131,6 +135,8 @@ public class GitInfo {
   public Branch Branch;
   public Tag Tag;
   public string TagName;
+  public IEnumerable<Commit> ReleaseNotesCommit;
+  public string ReleaseNotesFormatted;
 
   public GitInfo(ISetupContext context, BuildData data) {
     _repo = new Repository(data.Paths.Root.FullPath);

@@ -32,16 +32,15 @@ Teardown<BuildData>((context, data) => {
 
 Task("local/prepare").Does<BuildData>(data => {
   if(data.Git.Tag is not null) {
-    var tagVersion = VersionData.GetTagVersion(data.Git);
-
-    VersionData.WriteVersionProps(Context, data.Paths.VersionProps, tagVersion.Change(build: "local"));
-
+    data.Version.TagVersion = VersionData.GetTagVersion(data.Git);
+    data.Version.TargetVersion = data.Version.TagVersion;
   } else {
-    var branchVersion = VersionData.SetBranchSuffix(data.Git, data.Version.VersionProps);
-
-    VersionData.WriteVersionProps(Context, data.Paths.VersionProps, branchVersion.Change(build: "local"));
+    data.Version.BranchVersion = VersionData.SetBranchSuffix(data.Git, data.Version.VersionProps);
+    data.Version.TargetVersion = data.Version.BranchVersion;
   }
 
+  data.Version.TargetVersionWithBuildNumber = data.Version.TargetVersion.Change(build: "local");
+  VersionData.WriteVersionProps(Context, data.Paths.VersionProps, data.Version.TargetVersionWithBuildNumber);
 
   // Collect release notes
   var rnCommits = data.Git.GetCommitsForReleaseNotes();
