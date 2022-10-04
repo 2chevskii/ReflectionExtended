@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 
 namespace ReflectionExtended
 {
@@ -52,5 +53,28 @@ namespace ReflectionExtended
             this IEnumerable<Type> self,
             bool exactAttributeType = false
         ) where TAttribute : Attribute => self.WithAttributeOnSelf( typeof( TAttribute ), exactAttributeType );
+
+        public static IEnumerable<Type> Nested(this IEnumerable<Type> self) =>
+        from type in self where type.IsNested select type;
+
+        public static IEnumerable<Type> NonNested(this IEnumerable<Type> self) =>
+        from type in self where !type.IsNested select type;
+
+        public static IEnumerable<Type> Classes(this IEnumerable<Type> self) => from type in self where type.IsClass select type;
+
+        public static IEnumerable<Type> Structs(this IEnumerable<Type> self) =>
+        from type in self where type.IsValueType select type;
+
+        public static IEnumerable<Type> Interfaces(this IEnumerable<Type> self) =>
+        from type in self where type.IsInterface select type;
+
+        public static IEnumerable<Type> Abstract(this IEnumerable<Type> self) =>
+        from type in self where type.IsAbstract select type;
+
+        public static IEnumerable<Type> NonAbstract(this IEnumerable<Type> self) =>
+        from type in self where !type.IsAbstract select type;
+
+        public static IEnumerable<Type> Delegates(this IEnumerable<Type> self) =>
+        from type in self where type.IsClass && type.IsSubclassOf( typeof( Delegate ) ) select type;
     }
 }

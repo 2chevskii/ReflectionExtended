@@ -2,19 +2,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Linq;
-using System.Net.Sockets;
 using System.Reflection;
 
 namespace ReflectionExtended
 {
     public static partial class TypeExtensions
     {
+#region Property getter helpers
+
         public static object GetAttributeProperty(
             this Type self,
-            Type attributeType,
-            string propertyName,
-            bool ignoreInheritance = false,
-            bool exactAttributeType = true
+            Type      attributeType,
+            string    propertyName,
+            bool      ignoreInheritance  = false,
+            bool      exactAttributeType = true
         )
         {
             Attribute attribute;
@@ -26,7 +27,9 @@ namespace ReflectionExtended
             else
             {
                 attribute = self.GetCustomAttributes( attributeType )
-                                .FirstOrDefault( a => !exactAttributeType || a.GetType() == attributeType );
+                                .FirstOrDefault(
+                                    a => !exactAttributeType || a.GetType() == attributeType
+                                );
             }
 
             if (attribute is null)
@@ -49,10 +52,10 @@ namespace ReflectionExtended
 
         public static TProperty GetAttributeProperty<TProperty>(
             this Type self,
-            Type attributeType,
-            string propertyName,
-            bool ignoreInheritance = false,
-            bool exactAttributeType = true
+            Type      attributeType,
+            string    propertyName,
+            bool      ignoreInheritance  = false,
+            bool      exactAttributeType = true
         )
         {
             var value = self.GetAttributeProperty( attributeType, propertyName, ignoreInheritance, exactAttributeType );
@@ -61,10 +64,10 @@ namespace ReflectionExtended
         }
 
         public static object GetAttributeProperty<TAttribute>(
-            this Type self,
+            this Type                            self,
             Expression<Func<TAttribute, object>> propertySelectExpression,
-            bool ignoreInheritance = false,
-            bool exactAttributeType = true
+            bool                                 ignoreInheritance  = false,
+            bool                                 exactAttributeType = true
         )
         {
             Attribute attribute;
@@ -89,18 +92,18 @@ namespace ReflectionExtended
                 throw new InvalidOperationException( "Given expression cannot be converted to MemberExpression" );
 
             return memberExpression.Member switch {
-                       PropertyInfo property => property.GetValue( attribute ),
-                       FieldInfo field       => field.GetValue( attribute ),
-                       // FIXME: Write more specific exceptions
-                       var _ => throw new Exception()
-                   };
+                PropertyInfo property => property.GetValue( attribute ),
+                FieldInfo field       => field.GetValue( attribute ),
+                // FIXME: Write more specific exceptions
+                var _ => throw new Exception()
+            };
         }
 
         public static TProperty GetAttributeProperty<TAttribute, TProperty>(
-            this Type self,
+            this Type                               self,
             Expression<Func<TAttribute, TProperty>> propertySelectExpression,
-            bool ignoreInheritance = false,
-            bool exactAttributeType = true
+            bool                                    ignoreInheritance  = false,
+            bool                                    exactAttributeType = true
         )
         {
             Attribute attribute;
@@ -125,18 +128,20 @@ namespace ReflectionExtended
                 throw new InvalidOperationException( "Given expression cannot be converted to MemberExpression" );
 
             return memberExpression.Member switch {
-                       PropertyInfo property => (TProperty) Convert.ChangeType(
-                                                                               property.GetValue( attribute ),
-                                                                               typeof( TProperty )
-                                                                              ),
-                       FieldInfo field => (TProperty) Convert.ChangeType(
-                                                                         field.GetValue( attribute ),
-                                                                         typeof( TProperty )
-                                                                        ),
-                       // FIXME: Write more specific exceptions
-                       var _ => throw new Exception()
-                   };
+                PropertyInfo property => (TProperty) Convert.ChangeType(
+                    property.GetValue( attribute ),
+                    typeof( TProperty )
+                ),
+                FieldInfo field => (TProperty) Convert.ChangeType(
+                    field.GetValue( attribute ),
+                    typeof( TProperty )
+                ),
+                // FIXME: Write more specific exceptions
+                var _ => throw new Exception()
+            };
         }
+
+#endregion
 
         public static Attribute GetCustomAttributeIgnoringInheritance(
             this Type self,

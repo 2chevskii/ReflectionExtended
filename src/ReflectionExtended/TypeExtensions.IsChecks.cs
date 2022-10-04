@@ -52,7 +52,9 @@ namespace ReflectionExtended
 
         public static bool IsAssignableTo<T>(this Type self) => self.IsAssignableTo( typeof( T ) );
 
-#if !NET5_0_OR_GREATER
+        public static bool IsDelegate(this Type self) =>
+        self.IsClass && self.IsSubclassOf( typeof( Delegate ) );
+
         /// <summary>
         /// Polyfill for .NET &lt; 5 which does the same as <see cref="Type.IsAssignableFrom"/> but with swapped arguments
         /// </summary>
@@ -61,56 +63,57 @@ namespace ReflectionExtended
         /// <returns></returns>
         public static bool IsAssignableTo(this Type self, Type other) =>
         other.IsAssignableFrom( self );
-#endif
 
 #region Common known types checks
 
+        static readonly Type StringType            = typeof( string );
+        static readonly Type EnumerableType        = typeof( IEnumerable );
+        static readonly Type EnumerableGenericType = typeof( IEnumerable<> );
+        static readonly Type CollectionType        = typeof( ICollection );
+        static readonly Type CollectionGenericType = typeof( ICollection<> );
+        static readonly Type ListType              = typeof( IList );
+        static readonly Type ListGenericType       = typeof( IList<> );
+
         public static bool IsEnumerable(this Type self, bool notString = true)
+        {
+            if (notString && self == StringType)
+                return false;
+
+            return EnumerableType.IsAssignableFrom( self );
+        }
+
+        public static bool IsEnumerableGeneric(this Type self, bool notString = true)
         {
             if (notString && self == typeof( string ))
                 return false;
 
-            return typeof( IEnumerable ).IsAssignableFrom( self );
+            return self.GetInterface( EnumerableGenericType.Name ) is not null ||
+                   self.IsGenericType &&
+                   EnumerableGenericType.IsAssignableFrom( self.GetGenericTypeDefinition() );
+        }
+
+        public static bool IsCollection(this Type self)
+        {
+            return CollectionType.IsAssignableFrom( self );
         }
 
         public static bool IsGenericCollection(this Type self)
         {
-            Type icType = typeof( ICollection<> );
-
-            if (!self.IsGenericType) { return false; }
-
-            if (self.IsConstructedGenericType && self.GenericTypeArguments.Length is not 0)
-            {
-                var typeArg = self.GenericTypeArguments[0];
-
-                return icType.MakeGenericType( typeArg ).IsAssignableFrom( self );
-            }
-
-            if (icType.IsAssignableFrom( self )) { return true; }
-
-            return self.GetInterfaces()
-                       .Any(
-                            i => i is {
-                                          Name                : "ICollection`1",
-                                          IsGenericType       : true,
-                                          GenericTypeArguments: {Length: 1}
-                                      }
-                           );
+            return self.GetInterface( CollectionGenericType.Name ) is not null ||
+                   self.IsGenericType &&
+                   CollectionGenericType.IsAssignableFrom( self.GetGenericTypeDefinition() );
         }
 
-        public static bool IsNonGenericCollection(this Type self)
+        public static bool IsList(this Type self)
         {
-            return typeof( ICollection ).IsAssignableFrom( self );
+            return ListType.IsAssignableFrom( self );
         }
 
         public static bool IsGenericList(this Type self)
         {
-            return typeof( IList<> ).IsAssignableFrom( self );
-        }
-
-        public static bool IsNonGenericList(this Type self)
-        {
-            return typeof( IList ).IsAssignableFrom( self );
+            return self.GetInterface( ListGenericType.Name ) is not null ||
+                   self.IsGenericType &&
+                   ListGenericType.IsAssignableFrom( self.GetGenericTypeDefinition() );
         }
 
 #endregion

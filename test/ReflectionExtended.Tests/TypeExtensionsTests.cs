@@ -227,7 +227,7 @@ namespace ReflectionExtended.Tests
         [DataRow(typeof(IEnumerable<>), false)]
         public void IsNonGenericCollectionTest(Type type, bool expected)
         {
-            type.IsNonGenericCollection().Should().Be(expected);
+            type.IsCollection().Should().Be(expected);
         }
     }
 }

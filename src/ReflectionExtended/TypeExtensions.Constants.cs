@@ -7,11 +7,11 @@ namespace ReflectionExtended
 {
     public static partial class TypeExtensions
     {
-        public const BindingFlags BINDING_FLAGS_PUBLIC     = BindingFlags.Public;
-        public const BindingFlags BINDING_FLAGS_NON_PUBLIC = BindingFlags.NonPublic;
-        public const BindingFlags BINDING_FLAGS_ALL_ACCESS = BindingFlags.Public | BindingFlags.NonPublic;
-        public const BindingFlags BINDING_FLAGS_INSTANCE   = BindingFlags.Instance;
-        public const BindingFlags BINDING_FLAGS_STATIC     = BindingFlags.Static;
+        internal const BindingFlags BINDING_FLAGS_PUBLIC     = BindingFlags.Public;
+        internal const BindingFlags BINDING_FLAGS_NON_PUBLIC = BindingFlags.NonPublic;
+        internal const BindingFlags BINDING_FLAGS_ALL_ACCESS = BindingFlags.Public | BindingFlags.NonPublic;
+        internal const BindingFlags BINDING_FLAGS_INSTANCE   = BindingFlags.Instance;
+        internal const BindingFlags BINDING_FLAGS_STATIC     = BindingFlags.Static;
 
         public static IEnumerable<FieldInfo> GetConstants(this Type self, bool includeNonPublic = false) =>
         from field in self.GetFields(

@@ -9,11 +9,11 @@ namespace ReflectionExtended
     {
         public static IEnumerable<Type> GetInheritanceChain(
             this Type type,
-            bool includeSelf = true,
-            bool includeObject = true
+            bool      includeSelf   = true,
+            bool      includeObject = true
         )
         {
-            var currentType = includeSelf ? type : type.BaseType;
+            Type currentType = includeSelf ? type : type.BaseType;
 
             while (currentType is not null && (includeObject || currentType != typeof( object )))
             {
@@ -24,62 +24,74 @@ namespace ReflectionExtended
         }
 
         public static IEnumerable<Type> GetNestedClasses(
-            this Type self,
-            BindingFlags bindingFlags = BindingFlags.Public,
-            bool includeAbstract = true
+            this Type    self,
+            BindingFlags bindingFlags    = BindingFlags.Public,
+            bool         includeAbstract = true
         ) => from type in self.GetNestedTypes( bindingFlags )
              where type.IsClass
              where includeAbstract || !type.IsAbstract
              select type;
 
         public static IEnumerable<Type> GetNestedAbstractClasses(
-            this Type self,
+            this Type    self,
             BindingFlags bindingFlags = BindingFlags.Public
         ) => from type in self.GetNestedTypes( bindingFlags )
              where type is {IsClass: true, IsAbstract: true}
              select type;
 
         public static IEnumerable<Type> GetNestedValueTypes(
-            this Type self,
+            this Type    self,
             BindingFlags bindingFlags = BindingFlags.Public
         ) => from type in self.GetNestedTypes( bindingFlags ) where type.IsValueType select type;
 
         public static IEnumerable<Type> GetNestedInterfaces(
-            this Type self,
+            this Type    self,
             BindingFlags bindingFlags = BindingFlags.Public
         ) => from type in self.GetNestedTypes( bindingFlags ) where type.IsInterface select type;
 
         public static IEnumerable<Type> GetDerivedTypes(
             this Type self,
-            Assembly assembly = null,
-            bool onlyExported = false
-        ) => from type in onlyExported
-                          ? (assembly ?? self.Assembly).GetExportedTypes()
-                          : (assembly ?? self.Assembly).GetTypes()
-             where type != self && type.IsAssignableTo( self )
+            Assembly  assembly,
+            bool      includeNonExported = true
+        ) => from type in includeNonExported switch {
+                 true  => assembly.GetTypes(),
+                 false => assembly.GetExportedTypes()
+             }
+             where type != self && type.IsSubclassOf( self )
              select type;
 
         public static IEnumerable<Type> GetDerivedTypes(
             this Type self,
-            IEnumerable<Assembly> assemblies,
-            bool onlyExported = false
-        ) => assemblies.SelectMany( assembly => self.GetDerivedTypes( assembly, onlyExported ) );
+            bool      includeNonExported = true
+        ) => self.GetDerivedTypes( self.Assembly, includeNonExported );
 
         public static IEnumerable<Type> GetDerivedTypes(
-            this Type self,
+            this Type             self,
+            IEnumerable<Assembly> assemblies,
+            bool                  includeNonExported = true
+        ) => assemblies.SelectMany(
+            assembly => self.GetDerivedTypes( assembly, includeNonExported )
+        );
+
+        public static IEnumerable<Type> GetDerivedTypes(
+            this   Type       self,
             params Assembly[] assemblies
         ) => self.GetDerivedTypes( (IEnumerable<Assembly>) assemblies );
 
         public static IEnumerable<Type> GetExportedDerivedTypes(
-            this Type self,
+            this   Type       self,
             params Assembly[] assemblies
-        ) => self.GetDerivedTypes( assemblies, true );
+        ) => self.GetDerivedTypes( assemblies, false );
 
         public static IEnumerable<Type> GetDerivedTypes(
             this Type self,
             AppDomain appDomain,
-            bool onlyExported = false
-        ) => appDomain.GetAssemblies()
-                      .SelectMany( assembly => self.GetDerivedTypes( assembly, onlyExported ) );
+            bool      includeNonExported = true
+        )
+        {
+            return self.GetDerivedTypes( appDomain.GetAssemblies(), includeNonExported );
+        }
+
+        public static TypeTree ToTypeTree(this Type self) => TypeTree.Create( self );
     }
 }
