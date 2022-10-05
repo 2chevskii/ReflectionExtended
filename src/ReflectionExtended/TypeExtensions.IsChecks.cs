@@ -1,9 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
+using System.Reflection.Emit;
 
 namespace ReflectionExtended
 {
@@ -23,7 +21,7 @@ namespace ReflectionExtended
         /// <typeparam name="T">Current type</typeparam>
         /// <param name="self">Target type</param>
         /// <returns></returns>
-        public static bool Is<T>(this Type self) => self.IsAssignableTo<T>();
+        public static bool Is<T>(this Type self) => self.Is( typeof( T ) );
 
         /// <summary>
         /// Check if current type is equal to given type
@@ -55,6 +53,8 @@ namespace ReflectionExtended
         public static bool IsDelegate(this Type self) =>
         self.IsClass && self.IsSubclassOf( typeof( Delegate ) );
 
+        #if !NET5_OR_GREATER
+
         /// <summary>
         /// Polyfill for .NET &lt; 5 which does the same as <see cref="Type.IsAssignableFrom"/> but with swapped arguments
         /// </summary>
@@ -63,6 +63,8 @@ namespace ReflectionExtended
         /// <returns></returns>
         public static bool IsAssignableTo(this Type self, Type other) =>
         other.IsAssignableFrom( self );
+
+        #endif
 
 #region Common known types checks
 

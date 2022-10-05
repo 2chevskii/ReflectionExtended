@@ -2,14 +2,30 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
+using JetBrains.Annotations;
+
 using ReflectionExtended.Internal;
 
 namespace ReflectionExtended
 {
+    /// <summary>
+    /// Defines extension methods to work with <see cref="AppDomain"/> instances
+    /// </summary>
+    [PublicAPI]
     public static class AppDomainExtensions
     {
+        /// <summary>
+        /// Get specific assembly by name
+        /// </summary>
+        /// <param name="self"></param>
+        /// <param name="name"></param>
+        /// <param name="ignoreCase"></param>
+        /// <returns></returns>
+        [CanBeNull]
         public static Assembly GetAssembly(
+            [NotNull]
             this AppDomain self,
+            [NotNull]
             string name,
             bool ignoreCase = false
         )
@@ -17,12 +33,12 @@ namespace ReflectionExtended
             StringComparison comparisonMode =
                 ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
-            var assemblies = self.GetAssemblies();
+            Assembly[] assemblies = self.GetAssemblies();
 
-            for (var i = 0; i < assemblies.Length; i++)
+            for (int i = 0; i < assemblies.Length; i++)
             {
-                var assembly = assemblies[i];
-                var assemblyName = assembly.GetName().Name;
+                Assembly assembly = assemblies[i];
+                string assemblyName = assembly.GetName().Name;
 
                 if (assemblyName.Equals(name, comparisonMode))
                 {
@@ -33,18 +49,28 @@ namespace ReflectionExtended
             return null;
         }
 
+        /// <summary>
+        /// Get first assembly containing given string in name
+        /// </summary>
+        /// <param name="self"></param>
+        /// <param name="name"></param>
+        /// <param name="ignoreCase"></param>
+        /// <returns></returns>
+        [CanBeNull]
         public static Assembly GetAssemblyByPartialName(
+            [NotNull]
             this AppDomain self,
+            [NotNull]
             string name,
             bool ignoreCase = true
         )
         {
-            var assemblies = self.GetAssemblies();
+            Assembly[] assemblies = self.GetAssemblies();
 
-            for (var i = 0; i < assemblies.Length; i++)
+            for (int i = 0; i < assemblies.Length; i++)
             {
-                var assembly = assemblies[i];
-                var assemblyName = assembly.GetName().Name;
+                Assembly assembly = assemblies[i];
+                string assemblyName = assembly.GetName().Name;
 
                 if (assemblyName.Contains(name, ignoreCase))
                 {
@@ -55,19 +81,29 @@ namespace ReflectionExtended
             return null;
         }
 
+        /// <summary>
+        /// Get all assemblies with given string in Name
+        /// </summary>
+        /// <param name="self"></param>
+        /// <param name="name"></param>
+        /// <param name="ignoreCase"></param>
+        /// <returns></returns>
+        [NotNull]
         public static IEnumerable<Assembly> GetAssembliesByPartialName(
+            [NotNull]
             this AppDomain self,
+            [NotNull]
             string name,
             bool ignoreCase = true
         )
         {
-            var assemblies = self.GetAssemblies();
-            var matchingAssemblies = new HashSet<Assembly>();
+            Assembly[]        assemblies         = self.GetAssemblies();
+            HashSet<Assembly> matchingAssemblies = new HashSet<Assembly>();
 
-            for (var i = 0; i < assemblies.Length; i++)
+            for (int i = 0; i < assemblies.Length; i++)
             {
-                var assembly = assemblies[i];
-                var assemblyName = assembly.GetName().Name;
+                Assembly assembly = assemblies[i];
+                string assemblyName = assembly.GetName().Name;
 
                 if (assemblyName.Contains(name, ignoreCase))
                 {

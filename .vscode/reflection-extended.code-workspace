@@ -1,0 +1,13 @@
+{
+  "folders": [
+    {
+      "path": "../"
+    }
+  ],
+  "settings": {
+    "editor.formatOnSave": false,
+    "editor.formatOnType": false,
+    "csharp.semanticHighlighting.enabled": false,
+    "omnisharp.useModernNet": false
+  }
+}

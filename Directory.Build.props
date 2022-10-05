@@ -10,7 +10,7 @@
   <PropertyGroup>
     <Authors>2CHEVSKII</Authors>
     <Company />
-    <Copyright>Copyright (c) 2022 2CHEVSKII</Copyright>
+    <Copyright>Copyright © 2022 2CHEVSKII</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>$(GithubRepoUrl)</PackageProjectUrl>
     <RepositoryUrl>$(GithubRepoUrl).git</RepositoryUrl>

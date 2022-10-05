@@ -1,8 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <IsPackable Condition="'$(Configuration)' == 'Release'">true</IsPackable>
+
     <Configurations>Debug;Release</Configurations>
-    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;net6.0</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <DefineConstants>$(DefineConstants);JETBRAINS_ANNOTATIONS</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -10,20 +12,16 @@
     <LicenseFile>LICENSE</LicenseFile>
     <PackageIcon>icon.png</PackageIcon>
   </PropertyGroup>
-  <!--<ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <IsPackable>true</IsPackable>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
     <None Include="$(SourceRoot)LICENSE" PackagePath="LICENSE" CopyToOutputDirectory="PreserveNewest" Pack="true" />
     <None Include="$(SourceRoot)README.md" PackagePath="README.md" CopyToOutputDirectory="PreserveNewest" Pack="true" />
     <None Include="$(SourceRoot)assets\images\package-icon.png" PackagePath="icon.png" CopyToOutputDirectory="PreserveNewest" Pack="true" />
-  </ItemGroup>-->
-  <!--<PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <Optimize>true</Optimize>
-  </PropertyGroup>-->
-  <!--<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    ~1~ Allow usage of pattern matching in netstandard2.0 target @1@
-    <LangVersion>9</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net6.0'">
-    <Nullable>disable</Nullable>
-    <ImplicitUsings>disable</ImplicitUsings>
-  </PropertyGroup>-->
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="JetBrains.Annotations" Version="2022.1.0" />
+  </ItemGroup>
 </Project>
