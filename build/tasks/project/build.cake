@@ -44,7 +44,7 @@ Task("build/main:debug::netstandard2.0").IsDependeeOf("build/main:debug")
                                             NoDependencies = true,
                                             NoLogo = true,
                                             NoRestore = true,
-                                            Verbosity = DotNetVerbosity.Normal,
+                                            Verbosity = DotNetVerbosity.Minimal,
                                             Configuration = "Debug",
                                             Framework = "netstandard2.0"
                                           }
@@ -56,7 +56,7 @@ Task("build/main:debug::netstandard2.1").IsDependeeOf("build/main:debug")
                                             NoDependencies = true,
                                             NoLogo = true,
                                             NoRestore = true,
-                                            Verbosity = DotNetVerbosity.Normal,
+                                            Verbosity = DotNetVerbosity.Minimal,
                                             Configuration = "Debug",
                                             Framework = "netstandard2.1"
                                           }
@@ -68,7 +68,7 @@ Task("build/main:debug::net6.0").IsDependeeOf("build/main:debug")
                                     NoDependencies = true,
                                     NoLogo = true,
                                     NoRestore = true,
-                                    Verbosity = DotNetVerbosity.Normal,
+                                    Verbosity = DotNetVerbosity.Minimal,
                                     Configuration = "Debug",
                                     Framework = "net6.0"
                                   }
@@ -83,7 +83,7 @@ Task("build/main:release::netstandard2.0").IsDependeeOf("build/main:release")
                                               NoDependencies = true,
                                               NoLogo = true,
                                               NoRestore = true,
-                                              Verbosity = DotNetVerbosity.Normal,
+                                              Verbosity = DotNetVerbosity.Minimal,
                                               Configuration = "Release",
                                               Framework = "netstandard2.0"
                                             }
@@ -95,7 +95,7 @@ Task("build/main:release::netstandard2.1").IsDependeeOf("build/main:release")
                                               NoDependencies = true,
                                               NoLogo = true,
                                               NoRestore = true,
-                                              Verbosity = DotNetVerbosity.Normal,
+                                              Verbosity = DotNetVerbosity.Minimal,
                                               Configuration = "Release",
                                               Framework = "netstandard2.1"
                                             }
@@ -107,7 +107,7 @@ Task("build/main:release::net6.0").IsDependeeOf("build/main:release")
                                       NoDependencies = true,
                                       NoLogo = true,
                                       NoRestore = true,
-                                      Verbosity = DotNetVerbosity.Normal,
+                                      Verbosity = DotNetVerbosity.Minimal,
                                       Configuration = "Release",
                                       Framework = "net6.0"
                                     }
@@ -125,7 +125,7 @@ Task("build/test:debug::netcoreapp2.1").IsDependentOn("build/main:debug::netstan
                                             NoDependencies = true,
                                             NoLogo = true,
                                             NoRestore = true,
-                                            Verbosity = DotNetVerbosity.Normal,
+                                            Verbosity = DotNetVerbosity.Minimal,
                                             Configuration = "Debug",
                                             Framework = "netcoreapp2.1"
                                           }
@@ -138,7 +138,7 @@ Task("build/test:debug::netcoreapp3.1").IsDependentOn("build/main:debug::netstan
                                             NoDependencies = true,
                                             NoLogo = true,
                                             NoRestore = true,
-                                            Verbosity = DotNetVerbosity.Normal,
+                                            Verbosity = DotNetVerbosity.Minimal,
                                             Configuration = "Debug",
                                             Framework = "netcoreapp3.1"
                                           }
@@ -151,7 +151,7 @@ Task("build/test:debug::net6.0").IsDependentOn("build/main:debug::net6.0")
                                     NoDependencies = true,
                                     NoLogo = true,
                                     NoRestore = true,
-                                    Verbosity = DotNetVerbosity.Normal,
+                                    Verbosity = DotNetVerbosity.Minimal,
                                     Configuration = "Debug",
                                     Framework = "net6.0"
                                   }
@@ -159,3 +159,5 @@ Task("build/test:debug::net6.0").IsDependentOn("build/main:debug::net6.0")
 
 Task("build/test:debug").IsDependeeOf("build/test");
 Task("build/test").IsDependeeOf("build");
+
+Task("build");

@@ -8,5 +8,6 @@ obj/
 artifacts/
 
 TestResults/
+test_results/
 
 tools/
