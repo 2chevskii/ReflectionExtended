@@ -1,5 +1,7 @@
 # ReflectionExtended
 
+![logo](assets/images/logo.png)
+
 ## Build status
 Source | Status
 --- | ---

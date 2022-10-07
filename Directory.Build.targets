@@ -1,9 +1,0 @@
-<Project>
-
-  <PropertyGroup Label="Output paths configuration">
-    <OutputPath>bin\$(Configuration)\$(TargetFramework)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Configuration)\$(TargetFramework)\</IntermediateOutputPath>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-  </PropertyGroup>
-
-</Project>

@@ -38,4 +38,10 @@
     <Features>strict</Features>
   </PropertyGroup>
 
+  <PropertyGroup Label="Output paths configuration">
+    <OutputPath>bin\$(Configuration.ToLower())\$(TargetFramework)\</OutputPath>
+    <IntermediateOutputPath>obj\$(Configuration.ToLower())\$(TargetFramework)\</IntermediateOutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
 </Project>
