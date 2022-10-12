@@ -12,3 +12,6 @@ test_results/
 
 tools/
 build_old/
+logs/
+.nuke/temp
+.nuke/build.schema.json
