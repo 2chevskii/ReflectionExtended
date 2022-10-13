@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
@@ -5,12 +6,15 @@ using System.Linq;
 
 using LibGit2Sharp;
 
+using NuGet.Versioning;
+
 using Nuke.Common;
 using Nuke.Common.CI.AppVeyor;
 using Nuke.Common.Git;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
 using Nuke.Common.Tools.DotNet;
+using Nuke.Common.Utilities;
 using Nuke.Common.Utilities.Collections;
 
 using static Nuke.Common.IO.CompressionTasks;
@@ -44,8 +48,7 @@ public class BuildConfiguration : NukeBuild
     readonly Configuration[] Configuration = {parameters.Configuration.Debug};
     [Parameter] readonly bool Rebuild = false;
 
-    [Solution]
-    Solution ReflectionExtended;
+    [Solution(Name = "Solution")] Solution ReflectionExtendedSln;
 
     /* Paths config */
 
@@ -61,12 +64,16 @@ public class BuildConfiguration : NukeBuild
     AbsolutePath ArtifactsPkgDirectory => ArtifactsDirectory / "packages";
 
     public Target Restore => _ =>
-    _.Executes( () => DotNetRestore( restore => restore.SetProjectFile( SrcProjectFilePath ) ),
-                () =>
-                DotNetRestore( restore =>
-                               restore.SetProjectFile( TestProjectFilePath )
-                )
-    ).After( Clean, CleanOnRebuild );
+                             _.Executes(
+                                  () => DotNetRestore( restore =>
+                                                       restore.SetProjectFile( SrcProjectFilePath )
+                                  ),
+                                  () =>
+                                  DotNetRestore( restore =>
+                                                 restore.SetProjectFile( TestProjectFilePath )
+                                  )
+                              )
+                              .After( Clean, CleanOnRebuild );
 
     public Target Clean => _ => _.Executes( () => EnsureCleanDirectory( ArtifactsLibDirectory ),
                                             () => EnsureCleanDirectory( ArtifactsPkgDirectory ),
@@ -78,24 +85,29 @@ public class BuildConfiguration : NukeBuild
                                             ),
                                             () => EnsureCleanDirectory( TestProjectDirectory / "obj"
                                             )
-    ).Before(BuildSrcProject, BuildTestProject);
+                                 )
+                                 .Before( BuildSrcProject, BuildTestProject );
 
     public Target CleanOnRebuild => _ => _.DependsOn( Clean )
                                           .OnlyWhenStatic( () => Rebuild )
                                           .Unlisted();
 
-    public Target BuildSrcProject => _ => _.DependsOn( CleanOnRebuild , Restore )
+    public Target BuildSrcProject => _ => _.DependsOn( CleanOnRebuild, Restore )
                                            .Executes( () => Configuration.ForEach( c =>
                                                       SrcProjectFrameworks.ForEach( f =>
                                                       DotNetBuild( build => build
                                                       .SetProjectFile(
                                                           SrcProjectFilePath
                                                       )
-                                                      .SetConfiguration( c.ToString() )
+                                                      .SetConfiguration(
+                                                          c.ToString()
+                                                      )
                                                       .SetFramework( f )
                                                       .EnableNoRestore()
                                                       .EnableNoDependencies()
-                                                      .SetNoIncremental( Rebuild )
+                                                      .SetNoIncremental(
+                                                          Rebuild
+                                                      )
                                                       )
                                                       )
                                                       )
@@ -103,10 +115,15 @@ public class BuildConfiguration : NukeBuild
                                            .Unlisted();
 
     public Target BuildTestProject => _ => _.DependsOn( CleanOnRebuild, Restore, BuildSrcProject )
-                                            .OnlyWhenDynamic( () => Configuration.Contains( parameters.Configuration.Debug ) )
+                                            .OnlyWhenDynamic(
+                                                () => Configuration.Contains(
+                                                    parameters.Configuration.Debug
+                                                )
+                                            )
                                             .Executes( () => TestProjectFrameworks.ForEach( f =>
                                                        DotNetBuild( build => build
-                                                       .SetProjectFile( TestProjectFilePath
+                                                       .SetProjectFile(
+                                                           TestProjectFilePath
                                                        )
                                                        .SetConfiguration( "Debug" )
                                                        .SetFramework( f )
@@ -162,18 +179,47 @@ public class BuildConfiguration : NukeBuild
                                                "bin" /
                                                "Release" /
                                                f, ArtifactsLibDirectory / f + ".zip",
-                                               compressionLevel: CompressionLevel.SmallestSize,
+                                               compressionLevel: CompressionLevel
+                                               .SmallestSize,
                                                fileMode: FileMode.Create
                                            )
                                            )
                                 );
 
     public Target CI => _ => _.Executes( () =>
-    {
-        var     isTag   = AppVeyor.Instance.RepositoryTag;
-        Project project = ReflectionExtended.Projects.Single(p => p.Name == "ReflectionExtended");
+                                         {
 
-    } );
-    
+                                             // Read version from project file
+                                             var project =
+                                             ReflectionExtendedSln.GetProject( "ReflectionExtended"
+                                             );
+
+                                             var strProjectVersion =
+                                             project.GetProperty( "Version" );
+
+                                             Console.WriteLine(
+                                                 "Current project version is {0}", strProjectVersion
+                                             );
+
+                                             SemanticVersion projectVersion = SemanticVersion.Parse( strProjectVersion );
+
+                                             Console.WriteLine("Current project parsed version is {0}", projectVersion);
+
+                                             var appveyorBranch =
+                                             AppVeyor.Instance.RepositoryBranch;
+
+                                             if ( appveyorBranch is not "master" )
+                                             {
+                                                 projectVersion.Release.Append(
+                                                     appveyorBranch.ToLowerInvariant()
+                                                 );
+                                             }
+
+                                             var appveyorBuildNumber =
+                                             AppVeyor.Instance.BuildNumber;
+
+                                         }
+                        );
+
     public static int Main() => Execute<BuildConfiguration>();
 }
