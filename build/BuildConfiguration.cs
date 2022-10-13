@@ -1,21 +1,24 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 using LibGit2Sharp;
 
-using NuGet.Versioning;
-
 using Nuke.Common;
+using Nuke.Common.ChangeLog;
 using Nuke.Common.CI.AppVeyor;
-using Nuke.Common.Git;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
 using Nuke.Common.Tools.DotNet;
-using Nuke.Common.Utilities;
+using Nuke.Common.Tools.MinVer;
+using Nuke.Common.Tools.NerdbankGitVersioning;
 using Nuke.Common.Utilities.Collections;
+
+using Serilog;
 
 using static Nuke.Common.IO.CompressionTasks;
 using static Nuke.Common.IO.FileSystemTasks;
@@ -46,9 +49,9 @@ public class BuildConfiguration : NukeBuild
 
     [Parameter( List = true )]
     readonly Configuration[] Configuration = {parameters.Configuration.Debug};
-    [Parameter] readonly bool Rebuild = false;
+    [Parameter] readonly bool Rebuild;
 
-    [Solution(Name = "Solution")] Solution ReflectionExtendedSln;
+    [Solution( Name = "Solution" )] Solution ReflectionExtendedSln;
 
     /* Paths config */
 
@@ -64,16 +67,15 @@ public class BuildConfiguration : NukeBuild
     AbsolutePath ArtifactsPkgDirectory => ArtifactsDirectory / "packages";
 
     public Target Restore => _ =>
-                             _.Executes(
-                                  () => DotNetRestore( restore =>
-                                                       restore.SetProjectFile( SrcProjectFilePath )
-                                  ),
-                                  () =>
-                                  DotNetRestore( restore =>
-                                                 restore.SetProjectFile( TestProjectFilePath )
-                                  )
-                              )
-                              .After( Clean, CleanOnRebuild );
+    _.Executes( () => DotNetRestore( restore =>
+                                     restore.SetProjectFile( SrcProjectFilePath )
+                ),
+                () =>
+                DotNetRestore( restore =>
+                               restore.SetProjectFile( TestProjectFilePath )
+                )
+     )
+     .After( Clean, CleanOnRebuild );
 
     public Target Clean => _ => _.Executes( () => EnsureCleanDirectory( ArtifactsLibDirectory ),
                                             () => EnsureCleanDirectory( ArtifactsPkgDirectory ),
@@ -99,15 +101,11 @@ public class BuildConfiguration : NukeBuild
                                                       .SetProjectFile(
                                                           SrcProjectFilePath
                                                       )
-                                                      .SetConfiguration(
-                                                          c.ToString()
-                                                      )
+                                                      .SetConfiguration( c.ToString() )
                                                       .SetFramework( f )
                                                       .EnableNoRestore()
                                                       .EnableNoDependencies()
-                                                      .SetNoIncremental(
-                                                          Rebuild
-                                                      )
+                                                      .SetNoIncremental( Rebuild )
                                                       )
                                                       )
                                                       )
@@ -122,8 +120,7 @@ public class BuildConfiguration : NukeBuild
                                             )
                                             .Executes( () => TestProjectFrameworks.ForEach( f =>
                                                        DotNetBuild( build => build
-                                                       .SetProjectFile(
-                                                           TestProjectFilePath
+                                                       .SetProjectFile( TestProjectFilePath
                                                        )
                                                        .SetConfiguration( "Debug" )
                                                        .SetFramework( f )
@@ -186,40 +183,65 @@ public class BuildConfiguration : NukeBuild
                                            )
                                 );
 
-    public Target CI => _ => _.Executes( () =>
-                                         {
+    public Target CI => _ => _
+                             .DependsOn( Build,Test,Pack )
+                             .OnlyWhenStatic(() => !IsLocalBuild)
+                             .Executes( () =>
+                                 {
+                                     IReadOnlyCollection<AbsolutePath> libArtifacts       = ArtifactsLibDirectory.GlobFiles("*.zip");
+                                     IReadOnlyCollection<AbsolutePath> pkgArtifacts = ArtifactsPkgDirectory.GlobFiles("*.{nupkg,snupkg}");
 
-                                             // Read version from project file
-                                             var project =
-                                             ReflectionExtendedSln.GetProject( "ReflectionExtended"
-                                             );
+                                     /*Log.Information( "Lib artifacts: {@Libs}" ,libArtifacts.Select( p => p.ToString() ));
+                                     Log.Information( "Package artifacts: {@Pkgs}", pkgArtifacts
+                                                      .Select( p => p.ToString() )
+                                     );
+                                     */
 
-                                             var strProjectVersion =
-                                             project.GetProperty( "Version" );
+                                     libArtifacts.Concat(pkgArtifacts).ForEach(
+                                         path => AppVeyor.Instance.PushArtifact( path, path.Name )
+                                     );
+                                 }
+                             );
 
-                                             Console.WriteLine(
-                                                 "Current project version is {0}", strProjectVersion
-                                             );
+    /*public Target PrintVersion => _ => _.Executes( () =>
+    {
+        string releaseNotes = @"
+## v0.1.0
 
-                                             SemanticVersion projectVersion = SemanticVersion.Parse( strProjectVersion );
+- Some fix
+- Some feature
 
-                                             Console.WriteLine("Current project parsed version is {0}", projectVersion);
+## v0.2.0
 
-                                             var appveyorBranch =
-                                             AppVeyor.Instance.RepositoryBranch;
+- Some another cool feature
 
-                                             if ( appveyorBranch is not "master" )
-                                             {
-                                                 projectVersion.Release.Append(
-                                                     appveyorBranch.ToLowerInvariant()
-                                                 );
-                                             }
+";
 
-                                             var appveyorBuildNumber =
-                                             AppVeyor.Instance.BuildNumber;
+        Regex noteHeaderRegex = new ( @"## (?:[v]\s*([^\s]+))(?:\r\n|\n|\r)" );
 
-                                         }
-                        );
+        var headers = noteHeaderRegex.Matches( releaseNotes )
+                                     .Select( m => m.Index )
+                                     .OrderBy( i => i );
+
+        
+    } );*/
 
     public static int Main() => Execute<BuildConfiguration>();
+
+    string[] GetReleaseNotes(Commit[] commits)
+    {
+        return commits.Where( commit => !commit.MessageShort.Contains( "[skip rn]",
+                                                StringComparison.OrdinalIgnoreCase
+                                        ) &&
+                                        !commit.MessageShort.Contains( "[skip notes]",
+                                                StringComparison.OrdinalIgnoreCase
+                                        )
+                      )
+                      .Select( commit =>
+                               $"{commit.MessageShort} // {commit.Author.Name} at {commit.Author.When.ToString( "g" )}"
+                      )
+                      .ToArray();
+    }
+    
+
 }
