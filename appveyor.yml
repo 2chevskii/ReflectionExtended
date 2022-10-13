@@ -1,16 +1,12 @@
 image: Visual Studio 2022
 version: '#{build}'
+install:
+  - cmd: dotnet tool install -g Nuke.GlobalTool
 build: false
 build_script:
-  - cmd: echo "Build script is not implemented yet"
+  - cmd: nuke ci --configuration Debug Release
 test: false
 deploy: off
-artifacts:
-  - path: artifacts/lib/netstandard2.0.zip
-    name: netstandard2.0.zip
-  - path: artifacts/lib/net6.0.zip
-    name: net6.0.zip
-  - path: artifacts/packages/*.{nupkg|snupkg}
 
 # build_script:
 #   - ps: ./build.ps1 --target=ci --verbosity=verbose
