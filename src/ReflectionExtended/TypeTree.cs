@@ -3,142 +3,143 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace ReflectionExtended;
-
-public sealed class TypeTree
+namespace ReflectionExtended
 {
-    public Type Type => Root.Type;
-
-    public Node Root { get; }
-
-    private TypeTree(Node root)
+    public sealed class TypeTree
     {
-        Root = root;
-    }
+        public Type Type => Root.Type;
 
-    public static TypeTree Create(Type root)
-    {
-        return new TypeTree( Node.FromType( root ) );
-    }
+        public Node Root { get; }
 
-    public IEnumerable<Node> GetDirectInheritanceChain(bool fromBase = false)
-    {
-        List<Node> nodes = new ();
-        Node        node  = Root;
-
-        while (node is not null)
+        private TypeTree(Node root)
         {
-            nodes.Add( node );
-            node = node.Ancestor;
+            Root = root;
         }
 
-        if (fromBase)
-            nodes.Reverse();
-
-        return nodes;
-    }
-
-    public IEnumerable<Node> GetFullInheritanceChain(
-        bool fromBase         = false,
-        bool removeDuplicates = false
-    )
-    {
-        List<Node>  l = new ();
-        Stack<Node> s = new ();
-
-        s.Push( Root );
-
-        while (s.Count != 0)
+        public static TypeTree Create(Type root)
         {
-            Node top = s.Pop();
-            foreach (var i in top.Interfaces) { s.Push( i ); }
-
-            if (top.Ancestor is not null)
-                s.Push( top.Ancestor );
-
-            if (removeDuplicates && l.Any( node => node.Type == top.Type ))
-                continue;
-            l.Add( top );
+            return new TypeTree( Node.FromType( root ) );
         }
 
-        if (fromBase)
-            l.Reverse();
-
-        return l;
-    }
-
-    [DebuggerDisplay( "Node: {Type.Name}" )]
-    public sealed class Node
-    {
-        private List<Node> _interfaces;
-
-        public Type Type { get; }
-
-        public IReadOnlyList<Node> Interfaces => _interfaces;
-        public Node Ancestor { get; private set; }
-        public Node Child { get; }
-
-        private Node(Type type, Node child) : this( type )
+        public IEnumerable<Node> GetDirectInheritanceChain(bool fromBase = false)
         {
-            Child = child;
-        }
+            List<Node> nodes = new List<Node>();
+            Node       node  = Root;
 
-        private Node(Type type)
-        {
-            Type        = type;
-            _interfaces = new List<Node>();
-        }
-
-        internal static Node FromType(Type type, Node child = null)
-        {
-            Node node = child is not null ? new Node( type, child ) : new Node( type );
-
-            foreach (Node interfaceNode in from @interface in type.GetInterfaces()
-                                           select FromType( @interface, node ))
+            while (node != null)
             {
-                node.AddInterfaceAncestor( interfaceNode );
+                nodes.Add( node );
+                node = node.Ancestor;
             }
 
-            Type baseType = type.BaseType;
+            if (fromBase)
+                nodes.Reverse();
 
-            if (baseType is not null)
-                node.AddDirectAncestor( FromType( baseType, node ) );
-
-            return node;
+            return nodes;
         }
 
-        private void AddInterfaceAncestor(Node interfaceNode)
+        public IEnumerable<Node> GetFullInheritanceChain(
+            bool fromBase         = false,
+            bool removeDuplicates = false
+        )
         {
-            if (_interfaces.Any( node => node.Type == interfaceNode.Type ))
-                throw new InvalidOperationException(
-                    $"Node with type {interfaceNode.Type.Name} is already present in the ancestor list"
-                );
+            List<Node>  l = new List<Node>();
+            Stack<Node> s = new Stack<Node>();
 
-            if (!interfaceNode.Type.IsInterface)
-                throw new ArgumentException( "Given node is not an interface node" );
+            s.Push( Root );
 
-            if (interfaceNode.Child != this)
-                throw new InvalidOperationException(
-                    "Given node's child does not match this node"
-                );
+            while (s.Count != 0)
+            {
+                Node top = s.Pop();
+                foreach (var i in top.Interfaces) { s.Push( i ); }
 
-            _interfaces.Add( interfaceNode );
+                if (top.Ancestor != null)
+                    s.Push( top.Ancestor );
+
+                if (removeDuplicates && l.Any( node => node.Type == top.Type ))
+                    continue;
+                l.Add( top );
+            }
+
+            if (fromBase)
+                l.Reverse();
+
+            return l;
         }
 
-        private void AddDirectAncestor(Node node)
+        [DebuggerDisplay( "Node: {Type.Name}" )]
+        public sealed class Node
         {
-            if (Ancestor is not null)
-                throw new InvalidOperationException( "Node already has an ancestor" );
+            private List<Node> _interfaces;
 
-            if (node.Type.IsInterface)
-                throw new ArgumentException( "Interface node cannot be a direct ancestor" );
+            public Type Type { get; }
 
-            if (node.Child != this)
-                throw new InvalidOperationException(
-                    "Given node's child does not match this node"
-                );
+            public IReadOnlyList<Node> Interfaces => _interfaces;
+            public Node Ancestor { get; private set; }
+            public Node Child { get; }
 
-            Ancestor = node;
+            private Node(Type type, Node child) : this( type )
+            {
+                Child = child;
+            }
+
+            private Node(Type type)
+            {
+                Type        = type;
+                _interfaces = new List<Node>();
+            }
+
+            internal static Node FromType(Type type, Node child = null)
+            {
+                Node node = child != null ? new Node( type, child ) : new Node( type );
+
+                foreach (Node interfaceNode in from @interface in type.GetInterfaces()
+                                               select FromType( @interface, node ))
+                {
+                    node.AddInterfaceAncestor( interfaceNode );
+                }
+
+                Type baseType = type.BaseType;
+
+                if (baseType != null)
+                    node.AddDirectAncestor( FromType( baseType, node ) );
+
+                return node;
+            }
+
+            private void AddInterfaceAncestor(Node interfaceNode)
+            {
+                if (_interfaces.Any( node => node.Type == interfaceNode.Type ))
+                    throw new InvalidOperationException(
+                        $"Node with type {interfaceNode.Type.Name} is already present in the ancestor list"
+                    );
+
+                if (!interfaceNode.Type.IsInterface)
+                    throw new ArgumentException( "Given node is not an interface node" );
+
+                if (interfaceNode.Child != this)
+                    throw new InvalidOperationException(
+                        "Given node's child does not match this node"
+                    );
+
+                _interfaces.Add( interfaceNode );
+            }
+
+            private void AddDirectAncestor(Node node)
+            {
+                if (Ancestor != null)
+                    throw new InvalidOperationException( "Node already has an ancestor" );
+
+                if (node.Type.IsInterface)
+                    throw new ArgumentException( "Interface node cannot be a direct ancestor" );
+
+                if (node.Child != this)
+                    throw new InvalidOperationException(
+                        "Given node's child does not match this node"
+                    );
+
+                Ancestor = node;
+            }
         }
     }
 }

@@ -3,7 +3,7 @@
     <IsPackable>false</IsPackable>
     <Configurations>Debug</Configurations>
     <TargetFrameworks>netcoreapp2.1;netcoreapp3.1;net6.0</TargetFrameworks>
-    <Version>0.1.0-build0001</Version>
+    <Version>0.1.0</Version>
     <MainProjectPath>$(SourceRoot)src\ReflectionExtended\ReflectionExtended.csproj</MainProjectPath>
   </PropertyGroup>
   <ItemGroup>

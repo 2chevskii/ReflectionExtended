@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-
     <Configurations>Debug;Release</Configurations>
     <TargetFrameworks>netstandard2.0;netstandard2.1;net6.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <DefineConstants>$(DefineConstants);JETBRAINS_ANNOTATIONS</DefineConstants>
+    <DefineConstants>$(DefineConstants);JETBRAINS_ANNOTATIONS;CODE_ANALYSIS</DefineConstants>
+    <Version>0.1.0</Version>
   </PropertyGroup>
   <PropertyGroup>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -16,7 +16,8 @@
     <IsPackable>true</IsPackable>
     <Optimize>true</Optimize>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Label="Misc includes" Condition="'$(Configuration)' == 'Release'">
+    <!-- Include misc files into produced package -->
     <None Include="$(SourceRoot)LICENSE" PackagePath="LICENSE" CopyToOutputDirectory="PreserveNewest" Pack="true" />
     <None Include="$(SourceRoot)README.md" PackagePath="README.md" CopyToOutputDirectory="PreserveNewest" Pack="true" />
     <None Include="$(SourceRoot)assets\images\package-icon.png" PackagePath="icon.png" CopyToOutputDirectory="PreserveNewest" Pack="true" />

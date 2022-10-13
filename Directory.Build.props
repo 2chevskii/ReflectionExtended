@@ -1,28 +1,24 @@
 <Project>
 
-  <Import Project="$(SourceRoot)Version.props" />
-
   <PropertyGroup>
     <SourceRoot>$(MSBuildThisFileDirectory)</SourceRoot>
-    <GithubRepoUrl>https://github.com/2chevskii/ReflectionExtended</GithubRepoUrl>
   </PropertyGroup>
 
-  <PropertyGroup>
+  <PropertyGroup Label="Git info">
+    <GithubRepoUrl>https://github.com/2chevskii/ReflectionExtended</GithubRepoUrl>
+    <RepositoryUrl>$(GithubRepoUrl).git</RepositoryUrl>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Authors">
     <Authors>2CHEVSKII</Authors>
     <Company />
     <Copyright>Copyright © 2022 2CHEVSKII</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>$(GithubRepoUrl)</PackageProjectUrl>
-    <RepositoryUrl>$(GithubRepoUrl).git</RepositoryUrl>
+    <!-- <PackageProjectUrl>$(GithubRepoUrl)</PackageProjectUrl> -->
+
     <RepositoryType>git</RepositoryType>
     <!-- Set IsPackable to false by default -->
     <IsPackable>false</IsPackable>
-  </PropertyGroup>
-
-  <PropertyGroup Label="Compilation options">
-    <WarningsAsErrors>true</WarningsAsErrors>
-    <LangVersion>latest</LangVersion>
-    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
   </PropertyGroup>
 
   <PropertyGroup Label="Symbols">
@@ -37,11 +33,5 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <Features>strict</Features>
   </PropertyGroup>
-
-  <!-- <PropertyGroup Label="Output paths configuration">
-    <OutputPath>bin\$(Configuration.ToLower())\$(TargetFramework)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Configuration.ToLower())\$(TargetFramework)\</IntermediateOutputPath>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-  </PropertyGroup> -->
 
 </Project>

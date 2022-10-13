@@ -1,30 +1,28 @@
-using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 
-using JetBrains.Annotations;
-
-using Microsoft.Build.Tasks;
+using LibGit2Sharp;
 
 using Nuke.Common;
-using Nuke.Common.CI;
-using Nuke.Common.Execution;
+using Nuke.Common.CI.AppVeyor;
+using Nuke.Common.Git;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
-using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Utilities.Collections;
 
-using parameters;
-
-using static Nuke.Common.EnvironmentInfo;
 using static Nuke.Common.IO.CompressionTasks;
 using static Nuke.Common.IO.FileSystemTasks;
-using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
+
+using Configuration = parameters.Configuration;
+
+// ReSharper disable InconsistentNaming
+// ReSharper disable ConditionalAnnotation
+// ReSharper disable MissingSuppressionJustification
+// ReSharper disable MemberCanBePrivate.Global
 
 [SuppressMessage( "ReSharper", "MissingAnnotation" )]
 public class BuildConfiguration : NukeBuild
@@ -45,6 +43,9 @@ public class BuildConfiguration : NukeBuild
     [Parameter( List = true )]
     readonly Configuration[] Configuration = {parameters.Configuration.Debug};
     [Parameter] readonly bool Rebuild = false;
+
+    [Solution]
+    Solution ReflectionExtended;
 
     /* Paths config */
 
@@ -94,7 +95,7 @@ public class BuildConfiguration : NukeBuild
                                                       .SetFramework( f )
                                                       .EnableNoRestore()
                                                       .EnableNoDependencies()
-                                                      .SetNoIncremental( Rebuild ).AddNoWarns(1591)
+                                                      .SetNoIncremental( Rebuild )
                                                       )
                                                       )
                                                       )
@@ -167,83 +168,12 @@ public class BuildConfiguration : NukeBuild
                                            )
                                 );
 
-    /*public Target Build => _ => _.DependsOn( CleanOnRebuild )
-                                 .Executes( () =>
-                                     DotNetBuild( build => build.SetConfiguration( Configuration.ToString() ). )
-                                 );*/
+    public Target CI => _ => _.Executes( () =>
+    {
+        var     isTag   = AppVeyor.Instance.RepositoryTag;
+        Project project = ReflectionExtended.Projects.Single(p => p.Name == "ReflectionExtended");
 
-    /*public Target CleanSrcProject => _ => _.Before( BuildSrcProject )
-                                           .Executes( () => Configuration.ForEach( c =>
-                                                      DotNetClean( settings =>
-                                                      settings.SetProject(
-                                                                  SrcProjectFilePath
-                                                              )
-                                                              .SetConfiguration( c.ToString() )
-                                                      )
-                                                      )
-                                           );
-    public Target CleanTestProject => _ => _.Before( BuildTestProject )
-                                            .Executes( () => Configuration.ForEach( c =>
-                                                       DotNetClean( settings =>
-                                                       settings.SetProject(
-                                                                   TestProjectFilePath
-                                                               )
-                                                               .SetConfiguration( c.ToString() )
-                                                       )
-                                                       )
-                                            );
-    public Target CleanProjects => _ => _.DependsOn( CleanSrcProject, CleanTestProject );
-    public Target CleanLibArtifacts => _ =>
-    _.OnlyWhenDynamic( () => Configuration.Contains( parameters.Configuration.Release ) )
-     .Executes( () => EnsureCleanDirectory( ArtifactsLibDirectory ) );
-    public Target CleanPkgArtifacts => _ =>
-    _.OnlyWhenDynamic( () => Configuration.Contains( parameters.Configuration.Release ) )
-     .Executes( () => EnsureCleanDirectory( ArtifactsPkgDirectory ) );
-    public Target CleanArtifacts => _ => _.DependsOn( CleanLibArtifacts, CleanPkgArtifacts );
-    public Target Clean => _ => _.DependsOn( CleanProjects, CleanArtifacts );
-    public Target RestoreSrcProject => _ =>
-    _.Executes( () => DotNetRestore( restore => restore.SetProjectFile( SrcProjectFilePath ) ) );
-    public Target RestoreTestProject => _ =>
-    _.Executes( () => DotNetRestore( restore => restore.SetProjectFile( TestProjectFilePath ) ) );
-    public Target Restore => _ => _.DependsOn( RestoreSrcProject, RestoreTestProject );
-    public Target BuildSrcProject => _ => _.DependsOn( RestoreSrcProject )
-                                           .Executes( () => Configuration.ForEach(
-                                                          c => Framework.ForEach(
-                                                              f => DotNetBuild( settings =>
-                                                              settings
-                                                              .SetProjectFile(
-                                                                  SrcProjectFilePath
-                                                              )
-                                                              .SetConfiguration( c.ToString() )
-                                                              .SetFramework(
-                                                                  f.AsSrcProjectTarget()
-                                                              )
-                                                              .EnableNoRestore()
-                                                              .EnableNoDependencies()
-                                                              )
-                                                          )
-                                                      )
-                                           );
-    public Target BuildTestProject => _ => _.DependsOn( RestoreTestProject )
-                                            .DependsOn( BuildSrcProject )
-                                            .Executes( () => Configuration.ForEach( c =>
-                                                       Framework.ForEach(
-                                                           f => DotNetBuild( settings =>
-                                                           settings
-                                                           .SetProjectFile(
-                                                               TestProjectFilePath
-                                                           )
-                                                           .SetConfiguration( c.ToString() )
-                                                           .SetFramework(
-                                                               f.AsTestProjectTarget()
-                                                           )
-                                                           .EnableNoRestore()
-                                                           .EnableNoDependencies()
-                                                           )
-                                                       )
-                                                       )
-                                            );
-    public Target BuildProjects => _ => _.DependsOn( BuildSrcProject, BuildTestProject );*/
-
+    } );
+    
     public static int Main() => Execute<BuildConfiguration>();
 }

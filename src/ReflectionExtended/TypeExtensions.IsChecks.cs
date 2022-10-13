@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Reflection.Emit;
 
 namespace ReflectionExtended
 {
@@ -89,7 +88,7 @@ namespace ReflectionExtended
             if (notString && self == typeof( string ))
                 return false;
 
-            return self.GetInterface( EnumerableGenericType.Name ) is not null ||
+            return self.GetInterface( EnumerableGenericType.Name ) != null ||
                    self.IsGenericType &&
                    EnumerableGenericType.IsAssignableFrom( self.GetGenericTypeDefinition() );
         }
@@ -101,7 +100,7 @@ namespace ReflectionExtended
 
         public static bool IsGenericCollection(this Type self)
         {
-            return self.GetInterface( CollectionGenericType.Name ) is not null ||
+            return self.GetInterface( CollectionGenericType.Name ) != null ||
                    self.IsGenericType &&
                    CollectionGenericType.IsAssignableFrom( self.GetGenericTypeDefinition() );
         }
@@ -113,7 +112,7 @@ namespace ReflectionExtended
 
         public static bool IsGenericList(this Type self)
         {
-            return self.GetInterface( ListGenericType.Name ) is not null ||
+            return self.GetInterface( ListGenericType.Name ) != null ||
                    self.IsGenericType &&
                    ListGenericType.IsAssignableFrom( self.GetGenericTypeDefinition() );
         }

@@ -15,7 +15,7 @@ namespace ReflectionExtended
         {
             Type currentType = includeSelf ? type : type.BaseType;
 
-            while (currentType is not null && (includeObject || currentType != typeof( object )))
+            while (currentType != null && (includeObject || currentType != typeof( object )))
             {
                 yield return currentType;
 
@@ -36,7 +36,7 @@ namespace ReflectionExtended
             this Type    self,
             BindingFlags bindingFlags = BindingFlags.Public
         ) => from type in self.GetNestedTypes( bindingFlags )
-             where type is {IsClass: true, IsAbstract: true}
+             where type.IsClass && type.IsAbstract
              select type;
 
         public static IEnumerable<Type> GetNestedValueTypes(
@@ -53,10 +53,7 @@ namespace ReflectionExtended
             this Type self,
             Assembly  assembly,
             bool      includeNonExported = true
-        ) => from type in includeNonExported switch {
-                 true  => assembly.GetTypes(),
-                 false => assembly.GetExportedTypes()
-             }
+        ) => from type in includeNonExported ? assembly.GetTypes() : assembly.GetExportedTypes()
              where type != self && type.IsSubclassOf( self )
              select type;
 

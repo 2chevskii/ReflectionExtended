@@ -91,12 +91,24 @@ namespace ReflectionExtended
             if (memberExpression is null)
                 throw new InvalidOperationException( "Given expression cannot be converted to MemberExpression" );
 
+            switch (memberExpression.Member)
+            {
+                case PropertyInfo property:
+                    return property.GetValue( attribute );
+
+                case FieldInfo field:
+                    return field.GetValue( attribute );
+            }
+
+            throw new Exception();
+
+            /*
             return memberExpression.Member switch {
                 PropertyInfo property => property.GetValue( attribute ),
                 FieldInfo field       => field.GetValue( attribute ),
                 // FIXME: Write more specific exceptions
                 var _ => throw new Exception()
-            };
+            };*/
         }
 
         public static TProperty GetAttributeProperty<TAttribute, TProperty>(
@@ -127,7 +139,23 @@ namespace ReflectionExtended
             if (memberExpression is null)
                 throw new InvalidOperationException( "Given expression cannot be converted to MemberExpression" );
 
-            return memberExpression.Member switch {
+            switch (memberExpression.Member)
+            {
+                case PropertyInfo property:
+                    return (TProperty) Convert.ChangeType(
+                        property.GetValue( attribute ),
+                        typeof( TProperty )
+                    );
+                case FieldInfo field:
+                    return (TProperty) Convert.ChangeType(
+                        field.GetValue( attribute ),
+                        typeof( TProperty )
+                    );
+            }
+
+            throw new Exception();
+
+            /*return memberExpression.Member switch {
                 PropertyInfo property => (TProperty) Convert.ChangeType(
                     property.GetValue( attribute ),
                     typeof( TProperty )
@@ -138,7 +166,7 @@ namespace ReflectionExtended
                 ),
                 // FIXME: Write more specific exceptions
                 var _ => throw new Exception()
-            };
+            };*/
         }
 
 #endregion
@@ -162,7 +190,7 @@ namespace ReflectionExtended
 
             var selfAttr = self.GetCustomAttribute( attributeType, true );
 
-            if (selfAttr is not null && (!exactAttributeType || selfAttr.GetType().IsExactly( attributeType )))
+            if (selfAttr != null && (!exactAttributeType || selfAttr.GetType().IsExactly( attributeType )))
             {
                 return selfAttr;
             }
@@ -173,7 +201,7 @@ namespace ReflectionExtended
             {
                 var attr = ancestor.GetCustomAttribute( attributeType, false );
 
-                if (attr is not null && (!exactAttributeType || attr.GetType() == attributeType)) { return attr; }
+                if (attr != null && (!exactAttributeType || attr.GetType() == attributeType)) { return attr; }
             }
 
             return null;
@@ -228,7 +256,7 @@ namespace ReflectionExtended
         {
             if (ignoreInheritance)
             {
-                return self.GetCustomAttributeIgnoringInheritance( attributeType, exactAttributeType ) is not null;
+                return self.GetCustomAttributeIgnoringInheritance( attributeType, exactAttributeType ) != null;
             }
 
             if (exactAttributeType)
