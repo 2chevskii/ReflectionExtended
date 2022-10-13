@@ -3,24 +3,51 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
+using JetBrains.Annotations;
+
+// ReSharper disable MethodTooLong
+
 namespace ReflectionExtended
 {
+    /// <summary>
+    /// 
+    /// </summary>
+    [PublicAPI]
     public sealed class TypeTree
     {
+        /// <summary>
+        /// 
+        /// </summary>
+        [NotNull]
         public Type Type => Root.Type;
-
+        /// <summary>
+        /// 
+        /// </summary>
+        [NotNull]
         public Node Root { get; }
 
-        private TypeTree(Node root)
+        private TypeTree([NotNull] Node root)
         {
             Root = root;
         }
 
-        public static TypeTree Create(Type root)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="root"></param>
+        /// <returns></returns>
+        [NotNull]
+        public static TypeTree Create([NotNull] Type root)
         {
             return new TypeTree( Node.FromType( root ) );
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="fromBase"></param>
+        /// <returns></returns>
+        [NotNull, ItemNotNull]
         public IEnumerable<Node> GetDirectInheritanceChain(bool fromBase = false)
         {
             List<Node> nodes = new List<Node>();
@@ -38,6 +65,13 @@ namespace ReflectionExtended
             return nodes;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="fromBase"></param>
+        /// <param name="removeDuplicates"></param>
+        /// <returns></returns>
+        [NotNull, ItemNotNull]
         public IEnumerable<Node> GetFullInheritanceChain(
             bool fromBase         = false,
             bool removeDuplicates = false
@@ -51,7 +85,7 @@ namespace ReflectionExtended
             while (s.Count != 0)
             {
                 Node top = s.Pop();
-                foreach (var i in top.Interfaces) { s.Push( i ); }
+                foreach (Node i in top.Interfaces) { s.Push( i ); }
 
                 if (top.Ancestor != null)
                     s.Push( top.Ancestor );
@@ -67,29 +101,47 @@ namespace ReflectionExtended
             return l;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        [PublicAPI]
         [DebuggerDisplay( "Node: {Type.Name}" )]
         public sealed class Node
         {
-            private List<Node> _interfaces;
-
+            [NotNull, ItemNotNull] private readonly List<Node> _interfaces;
+            /// <summary>
+            /// 
+            /// </summary>
+            [NotNull]
             public Type Type { get; }
-
+            /// <summary>
+            /// 
+            /// </summary>
+            [PublicAPI, NotNull, ItemNotNull]
             public IReadOnlyList<Node> Interfaces => _interfaces;
+            /// <summary>
+            /// 
+            /// </summary>
+            [CanBeNull]
             public Node Ancestor { get; private set; }
+            /// <summary>
+            /// 
+            /// </summary>
+            [PublicAPI, CanBeNull]
             public Node Child { get; }
 
-            private Node(Type type, Node child) : this( type )
+            private Node([NotNull] Type type, [NotNull] Node child) : this( type )
             {
                 Child = child;
             }
 
-            private Node(Type type)
+            private Node([NotNull] Type type)
             {
                 Type        = type;
                 _interfaces = new List<Node>();
             }
 
-            internal static Node FromType(Type type, Node child = null)
+            internal static Node FromType([NotNull] Type type, [CanBeNull] Node child = null)
             {
                 Node node = child != null ? new Node( type, child ) : new Node( type );
 
@@ -107,7 +159,7 @@ namespace ReflectionExtended
                 return node;
             }
 
-            private void AddInterfaceAncestor(Node interfaceNode)
+            private void AddInterfaceAncestor([NotNull] Node interfaceNode)
             {
                 if (_interfaces.Any( node => node.Type == interfaceNode.Type ))
                     throw new InvalidOperationException(
@@ -125,7 +177,7 @@ namespace ReflectionExtended
                 _interfaces.Add( interfaceNode );
             }
 
-            private void AddDirectAncestor(Node node)
+            private void AddDirectAncestor([NotNull] Node node)
             {
                 if (Ancestor != null)
                     throw new InvalidOperationException( "Node already has an ancestor" );

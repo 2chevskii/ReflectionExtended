@@ -3,6 +3,8 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
 
+using JetBrains.Annotations;
+
 namespace ReflectionExtended
 {
     public static partial class TypeExtensions
@@ -13,7 +15,14 @@ namespace ReflectionExtended
         internal const BindingFlags BINDING_FLAGS_INSTANCE   = BindingFlags.Instance;
         internal const BindingFlags BINDING_FLAGS_STATIC     = BindingFlags.Static;
 
-        public static IEnumerable<FieldInfo> GetConstants(this Type self, bool includeNonPublic = false) =>
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="self"></param>
+        /// <param name="includeNonPublic"></param>
+        /// <returns></returns>
+        [NotNull,ItemNotNull]
+        public static IEnumerable<FieldInfo> GetConstants([NotNull]this Type self, bool includeNonPublic = false) =>
         from field in self.GetFields(
                                      (includeNonPublic ? BINDING_FLAGS_ALL_ACCESS : BINDING_FLAGS_PUBLIC) |
                                      BINDING_FLAGS_STATIC |
