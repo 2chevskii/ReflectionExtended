@@ -1,12 +1,28 @@
+# image: Visual Studio 2022
+# version: '#{build}'
+# before_build:
+#   - cmd: dotnet build ./build/_build.csproj -nologo --verbosity quiet
+# build: false
+# build_script:
+#   - cmd: ./build.cmd build pack push-artifacts --configuration Release
+# test: false
+# test_script:
+#   - cmd: ./build.cmd test --configuration Debug
+# after_test:
+#   - pwsh: (New-Object 'System.Net.WebClient').UploadFile("https://ci.appveyor.com/api/testresults/xunit/$($env:APPVEYOR_JOB_ID)", './test_results.xml')
+# deploy: off
+
 image: Visual Studio 2022
 version: '#{build}'
 install:
-  - cmd: dotnet tool restore --verbosity normal
-build: false
+  - cmd: dotnet build ./build/_build.csproj -nologo --verbosity quiet
+before_build:
+  - cmd: ./build.cmd init-version
 build_script:
-  - cmd: dotnet nuke -- build pack push-artifacts --configuration Release
-test: false
+  - cmd: ./build.cmd build 
+after_build:
+  - cmd: ./build.cmd pack
 test_script:
-  - cmd: dotnet nuke -- test --configuration Debug
-deploy: off
-
+  - cmd: ./build.cmd test-ci
+after_test:
+  - cmd: ./build.cmd upload-test-results

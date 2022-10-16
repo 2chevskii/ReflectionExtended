@@ -3,5 +3,7 @@
 :; ${SCRIPT_DIR}/build.sh "$@"
 :; exit $?
 
+rem powershell -ExecutionPolicy ByPass -NoProfile -File "%~dp0build.ps1" %*
+
 @ECHO OFF
-powershell -ExecutionPolicy ByPass -NoProfile -File "%~dp0build.ps1" %*
+dotnet "%~dp0build/bin/Debug/_build.dll" %*

@@ -1,147 +1,222 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
-
-using LibGit2Sharp;
+using System.Net.Http;
 
 using Nuke.Common;
 using Nuke.Common.CI.AppVeyor;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
 using Nuke.Common.Tools.DotNet;
-using Nuke.Common.Tools.MinVer;
-using Nuke.Common.Tools.NerdbankGitVersioning;
 using Nuke.Common.Utilities.Collections;
 
 using Serilog;
-
-using static Nuke.Common.IO.FileSystemTasks;
-using static Nuke.Common.Tools.DotNet.DotNetTasks;
-using static Nuke.Common.IO.CompressionTasks;
-
-using Configuration = parameters.Configuration;
-
-using GlobExpressions;
 
 using Nuke.Common.Utilities;
 
 using System.Text.RegularExpressions;
 
-using Nuke.Common.CI.AppVeyor.Configuration;
+using LibGit2Sharp;
+using Semver;
 
-#pragma warning disable CA1050
-// ReSharper disable TemplateIsNotCompileTimeConstantProblem
-
-// ReSharper disable InconsistentNaming
-// ReSharper disable ConditionalAnnotation
-// ReSharper disable MissingSuppressionJustification
-// ReSharper disable MemberCanBePrivate.Global
+using static Nuke.Common.IO.FileSystemTasks;
+using static Nuke.Common.Tools.DotNet.DotNetTasks;
+using static Nuke.Common.IO.CompressionTasks;
+using static Nuke.Common.ProjectModel.ProjectModelTasks;
 
 [SuppressMessage( "ReSharper", "MissingAnnotation" )]
 public class BuildConfiguration : NukeBuild
 {
-    const string SrcProjectName      = "ReflectionExtended";
-    const string SrcProjectFileName  = SrcProjectName + ".csproj";
-    const string TestProjectName     = "ReflectionExtended.Tests";
-    const string TestProjectFileName = TestProjectName + ".csproj";
+    private const string SrcProjectName      = "ReflectionExtended";
+    private const string SrcProjectFileName  = SrcProjectName + ".csproj";
+    private const string TestProjectName     = "ReflectionExtended.Tests";
+    private const string TestProjectFileName = TestProjectName + ".csproj";
 
-    readonly string[] SrcProjectFrameworks  = {"netstandard2.0", "netstandard2.1", "net6.0"};
-    readonly string[] TestProjectFrameworks = {"netcoreapp2.1", "netcoreapp3.1", "net6.0"};
+    /*
+     * Normal build version: $(Version)-$(IsMaster ? Empty : BranchName)+$(BuildNumber.ToHexString())
+     * Tag build version: $(TagVersion)
+     */
 
-    [Parameter( List = true )]
-    readonly Configuration[] Configuration = {parameters.Configuration.Debug};
-    [Parameter] readonly bool Rebuild;
+    [Solution(Name = "ReflectionExtended.sln")]
+    readonly Solution Solution;
 
-    [Solution( Name = "Solution" )] Solution ReflectionExtendedSln;
+    
 
     /* Paths config */
 
-    AbsolutePath SrcDirectory => RootDirectory / "src";
-    AbsolutePath SrcProjectDirectory => SrcDirectory / SrcProjectName;
-    AbsolutePath SrcProjectFilePath => SrcProjectDirectory / SrcProjectFileName;
-    AbsolutePath TestDirectory => RootDirectory / "test";
-    AbsolutePath TestProjectDirectory => TestDirectory / TestProjectName;
-    AbsolutePath TestProjectFilePath => TestProjectDirectory / TestProjectFileName;
+    private static AbsolutePath SrcDirectory => RootDirectory / "src";
+    private static AbsolutePath SrcProjectDirectory => SrcDirectory / SrcProjectName;
+    private static AbsolutePath SrcProjectFilePath => SrcProjectDirectory / SrcProjectFileName;
+    private static AbsolutePath TestDirectory => RootDirectory / "test";
+    private static AbsolutePath TestProjectDirectory => TestDirectory / TestProjectName;
+    private static AbsolutePath TestProjectFilePath => TestProjectDirectory / TestProjectFileName;
 
-    AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
-    AbsolutePath ArtifactsLibDirectory => ArtifactsDirectory / "lib";
-    AbsolutePath ArtifactsPkgDirectory => ArtifactsDirectory / "packages";
+    private static AbsolutePath TestResultsDirectory => RootDirectory / "test_results";
+
+    private static AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
+    private static AbsolutePath ArtifactsLibDirectory => ArtifactsDirectory / "lib";
+    private static AbsolutePath ArtifactsPkgDirectory => ArtifactsDirectory / "packages";
 
     public Target Restore => _ => _.Executes(
-                                       () => DotNetRestore(
-                                           restore => restore.SetProjectFile( SrcProjectFilePath )
-                                       ),
-                                       () => DotNetRestore(
-                                           restore => restore.SetProjectFile( TestProjectFilePath )
-                                       )
-                                   )
-                                   .After( Clean, CleanOnRebuild );
+        () => DotNetRestore( restore => restore.SetProjectFile( SrcProjectFilePath ) ),
+        () => DotNetRestore( restore => restore.SetProjectFile( TestProjectFilePath ) )
+    );
 
     public Target Clean => _ => _.Executes(
-                                     () => EnsureCleanDirectory( ArtifactsLibDirectory ),
-                                     () => EnsureCleanDirectory( ArtifactsPkgDirectory ),
-                                     () => EnsureCleanDirectory( SrcProjectDirectory / "bin" ),
-                                     () => EnsureCleanDirectory( SrcProjectDirectory / "obj" ),
-                                     () => EnsureCleanDirectory( TestProjectDirectory / "bin" ),
-                                     () => EnsureCleanDirectory( TestProjectDirectory / "obj" )
-                                 )
-                                 .Before( BuildSrcProject, BuildTestProject )
-                                 .Triggers( Restore );
+        () => EnsureCleanDirectory( ArtifactsLibDirectory ),
+        () => EnsureCleanDirectory( ArtifactsPkgDirectory ),
+        () => EnsureCleanDirectory( TestResultsDirectory ),
+        () => DotNetClean( settings => settings.SetProject( SrcProjectFilePath ).SetConfiguration("Debug") ),
+        () => DotNetClean( settings => settings.SetProject( SrcProjectFilePath ).SetConfiguration("Release") ),
+        () => DotNetClean( settings => settings.SetProject( TestProjectFilePath ).SetConfiguration("Debug") ),
+        () => DotNetClean( settings => settings.SetProject( TestProjectFilePath ).SetConfiguration("Release") )
+    );
 
-    public Target CleanOnRebuild => _ => _.DependsOn( Clean )
-                                          .OnlyWhenStatic( () => Rebuild )
-                                          .Unlisted();
+    public Target InitVersion => _ => _.OnlyWhenStatic( () => !IsLocalBuild )
+                                       .Executes(
+                                           () => {
+                                               var project = ParseProject( SrcProjectFilePath );
+                                               var version =
+                                               project.GetPropertyValue( "Version" );
+                                               var semver = SemVersion.Parse(
+                                                   version,
+                                                   SemVersionStyles.Strict
+                                               );
+                                               int buildNumber = AppVeyor.Instance.BuildNumber;
+
+                                               semver = semver.WithMetadata(
+                                                   $"build.{buildNumber:X}"
+                                               );
+
+                                               if (AppVeyor.Instance.RepositoryTag)
+                                               {
+                                                   semver = SemVersion.Parse(AppVeyor.Instance.RepositoryTagName, SemVersionStyles.AllowV);
+                                                   throw new NotImplementedException();
+                                               }
+                                               else
+                                               {
+                                                   if (AppVeyor.Instance.RepositoryBranch is not
+                                                       "master")
+                                                   {
+                                                       semver = semver.WithPrerelease(
+                                                           AppVeyor.Instance.RepositoryBranch
+                                                       );
+                                                   }
+                                               }
+
+                                               project.SetProperty( "Version", semver.ToString() );
+
+                                               AppVeyor.Instance.UpdateBuildVersion( semver.ToString() );
+                                           }
+                                       );
 
     public Target BuildSrcProject => _ => _.DependsOn( Restore )
                                            .Executes(
-                                               () => Configuration.ForEach(
-                                                   c => DotNetBuild(
-                                                       settings => {
-                                                           Info(
-                                                               "Building ReflectionExtended in '{Configuration}' configuration",
-                                                               c.ToString()
-                                                           );
-                                                           return settings
-                                                           .SetProjectFile( SrcProjectFilePath )
-                                                           .SetConfiguration( c.ToString() )
-                                                           .EnableNoRestore();
-                                                       }
-                                                   )
+                                               () => DotNetBuild(
+                                                   settings =>
+                                                   settings.SetProjectFile( SrcProjectFilePath )
+                                                           .SetConfiguration( "Release" )
+                                                           .EnableNoRestore()
                                                )
-                                           )
-                                           .Unlisted();
+                                           );
 
     public Target BuildTestProject => _ => _.DependsOn( Restore )
                                             .Executes(
                                                 () => DotNetBuild(
-                                                    settings => {
-                                                        Info(
-                                                            "Building ReflectionExtended.Tests (Debug configuration)"
-                                                        );
-                                                        return settings
-                                                               .SetProjectFile(
-                                                                   TestProjectFilePath
-                                                               )
-                                                               .SetConfiguration( "Debug" )
-                                                               .EnableNoRestore();
-                                                    }
-                                                )
-                                            )
-                                            .Unlisted();
-
-    public Target Build => _ => _.DependsOn( BuildSrcProject, BuildTestProject );
-
-    public Target Test => _ => _.DependsOn( BuildTestProject )
-                                .Executes(
-                                    () => DotNetTest(
-                                        settings => settings.SetProjectFile( TestProjectFilePath )
+                                                    settings =>
+                                                    settings.SetProjectFile( TestProjectFilePath )
                                                             .SetConfiguration( "Debug" )
-                                                            .SetLoggers( "console" )
-                                                            .SetVerbosity( DotNetVerbosity.Normal )
-                                                            .EnableNoBuild()
-                                    )
-                                );
+                                                            .EnableNoRestore()
+                                                )
+                                            );
+
+    public Target Build => _ => _.Triggers( BuildSrcProject, BuildTestProject );
+
+    readonly Action[] TestActions = {
+        () => DotNetTest(
+            settings => settings.SetProjectFile( TestProjectFilePath )
+                                .SetConfiguration( "Debug" )
+                                .SetFramework("netcoreapp2.1")
+                                .SetResultsDirectory( TestResultsDirectory )
+                                .SetLoggers(
+                                    "trx;LogFileName=results_netcoreapp2.1.xml",
+                                    "console;verbosity=normal"
+                                )
+                                .SetVerbosity( DotNetVerbosity.Normal )
+                                .EnableNoBuild()
+                                .EnableNoLogo()
+        ),
+        () => DotNetTest(
+            settings => settings.SetProjectFile( TestProjectFilePath )
+                                .SetConfiguration( "Debug" )
+                                .SetFramework( "netcoreapp3.1" )
+                                .SetResultsDirectory( RootDirectory / "test_results" )
+                                .SetLoggers(
+                                    "trx;LogFileName=results_netcoreapp3.1.xml",
+                                    "console;verbosity=normal"
+                                )
+                                .SetVerbosity( DotNetVerbosity.Normal )
+                                .EnableNoBuild()
+                                .EnableNoLogo()
+        ),
+        () => DotNetTest(
+            settings => settings.SetProjectFile( TestProjectFilePath )
+                                .SetConfiguration( "Debug" )
+                                .SetFramework( "net6.0" )
+                                .SetResultsDirectory( TestResultsDirectory )
+                                .SetLoggers(
+                                    "trx;LogFileName=results_net6.0.xml",
+                                    "console;verbosity=normal"
+                                )
+                                .SetVerbosity( DotNetVerbosity.Normal )
+                                .EnableNoBuild()
+                                .EnableNoLogo()
+        )
+    };
+    public Target Test => _ => _.DependsOn( BuildTestProject ).Executes( TestActions );
+    public Target TestCi => _ => _.OnlyWhenStatic( () => !IsLocalBuild ).Executes( TestActions );
+
+    public Target UploadTestResults => _ => _.OnlyWhenStatic( () => !IsLocalBuild )
+                                             .Executes(
+                                                 () => {
+                                                     string jobId = AppVeyor.Instance.JobId;
+
+                                                     string uploadUrl =
+                                                     $"https://ci.appveyor.com/api/testresults/mstest/{jobId}";
+
+                                                     using (HttpClient httpClient = new ())
+                                                     {
+                                                         foreach (AbsolutePath path in
+                                                                  (RootDirectory / "test_results")
+                                                                  .GlobFiles(
+                                                                      "results_*.xml"
+                                                                  ))
+                                                         {
+                                                             Info(
+                                                                 "Uploading test result: {ResultPath}",
+                                                                 path
+                                                             );
+                                                             MultipartFormDataContent content =
+                                                             new ();
+
+                                                             using (FileStream fs = File.OpenRead(
+                                                                 path
+                                                             ))
+                                                             {
+                                                                 content.Add(
+                                                                     new StreamContent( fs )
+                                                                 );
+
+                                                                 httpClient.PostAsync(
+                                                                     new Uri( uploadUrl ),
+                                                                     content
+                                                                 );
+                                                             }
+                                                         }
+                                                     }
+                                                 }
+                                             );
 
     public Target Pack => _ => _.DependsOn( Clean, BuildSrcProject )
                                 .Executes( /* Create a nuget package => artifacts/packages/ReflectionExtended(Version).(s)nupkg */
@@ -203,7 +278,7 @@ public class BuildConfiguration : NukeBuild
         () => {
             const string HeaderRegex      = @"(##\s+ReflectionExtended\s*[vV](\d+\.\d+(?:\.\d+)?))";
             const string Version          = "1.0.0";
-            AbsolutePath          releaseNotesPath = RootDirectory / "RELEASE_NOTES.md";
+            AbsolutePath releaseNotesPath = RootDirectory / "RELEASE_NOTES.md";
 
             string fileText = System.IO.File.ReadAllText( releaseNotesPath );
 
@@ -249,21 +324,27 @@ public class BuildConfiguration : NukeBuild
 
     public static int Main() => Execute<BuildConfiguration>();
 
-    static void Info(string template, params object[] args)
+    private static void Info(string template, params object[] args)
     {
-        if (IsLocalBuild) { Log.Information( template, args ); }
-        else { AppVeyor.Instance.WriteInformation( string.Format( template, args ) ); }
+        if (IsLocalBuild)
+            Log.Information( template, args );
+        else
+            AppVeyor.Instance.WriteInformation( string.Format( template, args ) );
     }
 
-    static void Warn(string template, params object[] args)
+    private static void Warn(string template, params object[] args)
     {
-        if (IsLocalBuild) { Log.Warning( template, args ); }
-        else { AppVeyor.Instance.WriteWarning( string.Format( template, args ) ); }
+        if (IsLocalBuild)
+            Log.Warning( template, args );
+        else
+            AppVeyor.Instance.WriteWarning( string.Format( template, args ) );
     }
 
-    static void Error(string template, params object[] args)
+    private static void Error(string template, params object[] args)
     {
-        if (IsLocalBuild) { Log.Error( template, args ); }
-        else { AppVeyor.Instance.WriteError( string.Format( template, args ) ); }
+        if (IsLocalBuild)
+            Log.Error( template, args );
+        else
+            AppVeyor.Instance.WriteError( string.Format( template, args ) );
     }
 }
