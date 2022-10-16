@@ -71,7 +71,7 @@ public class BuildConfiguration : NukeBuild
         () => DotNetClean( settings => settings.SetProject( SrcProjectFilePath ).SetConfiguration("Release") ),
         () => DotNetClean( settings => settings.SetProject( TestProjectFilePath ).SetConfiguration("Debug") ),
         () => DotNetClean( settings => settings.SetProject( TestProjectFilePath ).SetConfiguration("Release") )
-    );
+    ).Before( Restore, BuildSrcProject, BuildTestProject, Build, Pack );
 
     public Target InitVersion => _ => _.OnlyWhenStatic( () => !IsLocalBuild )
                                        .Executes(
