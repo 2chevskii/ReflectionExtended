@@ -86,7 +86,7 @@ public class BuildConfiguration : NukeBuild
                                                int buildNumber = AppVeyor.Instance.BuildNumber;
 
                                                semver = semver.WithMetadata(
-                                                   $"build.{buildNumber:X}"
+                                                   "build", buildNumber.ToString("X")
                                                );
 
                                                if (AppVeyor.Instance.RepositoryTag)
