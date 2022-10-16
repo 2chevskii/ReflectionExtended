@@ -1,15 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Text.RegularExpressions;
 
 using LibGit2Sharp;
 
 using Nuke.Common;
-using Nuke.Common.ChangeLog;
 using Nuke.Common.CI.AppVeyor;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
@@ -20,11 +16,22 @@ using Nuke.Common.Utilities.Collections;
 
 using Serilog;
 
-using static Nuke.Common.IO.CompressionTasks;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
+using static Nuke.Common.IO.CompressionTasks;
 
 using Configuration = parameters.Configuration;
+
+using GlobExpressions;
+
+using Nuke.Common.Utilities;
+
+using System.Text.RegularExpressions;
+
+using Nuke.Common.CI.AppVeyor.Configuration;
+
+#pragma warning disable CA1050
+// ReSharper disable TemplateIsNotCompileTimeConstantProblem
 
 // ReSharper disable InconsistentNaming
 // ReSharper disable ConditionalAnnotation
@@ -34,12 +41,7 @@ using Configuration = parameters.Configuration;
 [SuppressMessage( "ReSharper", "MissingAnnotation" )]
 public class BuildConfiguration : NukeBuild
 {
-    /// Support plugins are available for:
-    ///   - JetBrains ReSharper        https://nuke.build/resharper
-    ///   - JetBrains Rider            https://nuke.build/rider
-    ///   - Microsoft VisualStudio     https://nuke.build/visualstudio
-    ///   - Microsoft VSCode           https://nuke.build/vscode
-    const string SrcProjectName = "ReflectionExtended";
+    const string SrcProjectName      = "ReflectionExtended";
     const string SrcProjectFileName  = SrcProjectName + ".csproj";
     const string TestProjectName     = "ReflectionExtended.Tests";
     const string TestProjectFileName = TestProjectName + ".csproj";
@@ -66,182 +68,202 @@ public class BuildConfiguration : NukeBuild
     AbsolutePath ArtifactsLibDirectory => ArtifactsDirectory / "lib";
     AbsolutePath ArtifactsPkgDirectory => ArtifactsDirectory / "packages";
 
-    public Target Restore => _ =>
-    _.Executes( () => DotNetRestore( restore =>
-                                     restore.SetProjectFile( SrcProjectFilePath )
-                ),
-                () =>
-                DotNetRestore( restore =>
-                               restore.SetProjectFile( TestProjectFilePath )
-                )
-     )
-     .After( Clean, CleanOnRebuild );
+    public Target Restore => _ => _.Executes(
+                                       () => DotNetRestore(
+                                           restore => restore.SetProjectFile( SrcProjectFilePath )
+                                       ),
+                                       () => DotNetRestore(
+                                           restore => restore.SetProjectFile( TestProjectFilePath )
+                                       )
+                                   )
+                                   .After( Clean, CleanOnRebuild );
 
-    public Target Clean => _ => _.Executes( () => EnsureCleanDirectory( ArtifactsLibDirectory ),
-                                            () => EnsureCleanDirectory( ArtifactsPkgDirectory ),
-                                            () => EnsureCleanDirectory( SrcProjectDirectory / "bin"
-                                            ),
-                                            () => EnsureCleanDirectory( SrcProjectDirectory / "obj"
-                                            ),
-                                            () => EnsureCleanDirectory( TestProjectDirectory / "bin"
-                                            ),
-                                            () => EnsureCleanDirectory( TestProjectDirectory / "obj"
-                                            )
+    public Target Clean => _ => _.Executes(
+                                     () => EnsureCleanDirectory( ArtifactsLibDirectory ),
+                                     () => EnsureCleanDirectory( ArtifactsPkgDirectory ),
+                                     () => EnsureCleanDirectory( SrcProjectDirectory / "bin" ),
+                                     () => EnsureCleanDirectory( SrcProjectDirectory / "obj" ),
+                                     () => EnsureCleanDirectory( TestProjectDirectory / "bin" ),
+                                     () => EnsureCleanDirectory( TestProjectDirectory / "obj" )
                                  )
-                                 .Before( BuildSrcProject, BuildTestProject );
+                                 .Before( BuildSrcProject, BuildTestProject )
+                                 .Triggers( Restore );
 
     public Target CleanOnRebuild => _ => _.DependsOn( Clean )
                                           .OnlyWhenStatic( () => Rebuild )
                                           .Unlisted();
 
-    public Target BuildSrcProject => _ => _.DependsOn( CleanOnRebuild, Restore )
-                                           .Executes( () => Configuration.ForEach( c =>
-                                                      SrcProjectFrameworks.ForEach( f =>
-                                                      DotNetBuild( build => build
-                                                      .SetProjectFile(
-                                                          SrcProjectFilePath
-                                                      )
-                                                      .SetConfiguration( c.ToString() )
-                                                      .SetFramework( f )
-                                                      .EnableNoRestore()
-                                                      .EnableNoDependencies()
-                                                      .SetNoIncremental( Rebuild )
-                                                      )
-                                                      )
-                                                      )
+    public Target BuildSrcProject => _ => _.DependsOn( Restore )
+                                           .Executes(
+                                               () => Configuration.ForEach(
+                                                   c => DotNetBuild(
+                                                       settings => {
+                                                           Info(
+                                                               "Building ReflectionExtended in '{Configuration}' configuration",
+                                                               c.ToString()
+                                                           );
+                                                           return settings
+                                                           .SetProjectFile( SrcProjectFilePath )
+                                                           .SetConfiguration( c.ToString() )
+                                                           .EnableNoRestore();
+                                                       }
+                                                   )
+                                               )
                                            )
                                            .Unlisted();
 
-    public Target BuildTestProject => _ => _.DependsOn( CleanOnRebuild, Restore, BuildSrcProject )
-                                            .OnlyWhenDynamic(
-                                                () => Configuration.Contains(
-                                                    parameters.Configuration.Debug
+    public Target BuildTestProject => _ => _.DependsOn( Restore )
+                                            .Executes(
+                                                () => DotNetBuild(
+                                                    settings => {
+                                                        Info(
+                                                            "Building ReflectionExtended.Tests (Debug configuration)"
+                                                        );
+                                                        return settings
+                                                               .SetProjectFile(
+                                                                   TestProjectFilePath
+                                                               )
+                                                               .SetConfiguration( "Debug" )
+                                                               .EnableNoRestore();
+                                                    }
                                                 )
-                                            )
-                                            .Executes( () => TestProjectFrameworks.ForEach( f =>
-                                                       DotNetBuild( build => build
-                                                       .SetProjectFile( TestProjectFilePath
-                                                       )
-                                                       .SetConfiguration( "Debug" )
-                                                       .SetFramework( f )
-                                                       .EnableNoRestore()
-                                                       .EnableNoDependencies()
-                                                       .SetNoIncremental( Rebuild )
-                                                       )
-                                                       )
                                             )
                                             .Unlisted();
 
     public Target Build => _ => _.DependsOn( BuildSrcProject, BuildTestProject );
 
-    public Target Test => _ => _
-                               .DependsOn( Build )
-                               .Executes( () => TestProjectFrameworks.ForEach(
-                                              f => DotNetTest( test => test
-                                                               .SetProjectFile( TestProjectFilePath
-                                                               )
-                                                               .SetConfiguration( "Debug" )
-                                                               .SetLoggers( "console" )
-                                                               .SetVerbosity( DotNetVerbosity.Normal
-                                                               )
-                                                               .SetFramework( f )
-                                                               .EnableNoRestore()
-                                                               .EnableNoBuild()
-                                              )
-                                          )
-                               );
-
-    public Target Pack => _ => _.DependsOn( Clean, Build )
-                                .After( Test )
-                                .OnlyWhenDynamic(
-                                    () => Configuration.Contains( parameters.Configuration.Release )
-                                )
-                                .Executes( () => DotNetPack( pack => pack
-                                                             .SetConfiguration(
-                                                                 parameters.Configuration.Release
-                                                                 .ToString()
-                                                             )
-                                                             .EnableNoRestore()
-                                                             .EnableNoDependencies()
-                                                             .EnableNoBuild()
-                                                             .SetVerbosity( DotNetVerbosity.Normal )
-                                                             .SetProject( SrcProjectFilePath )
-                                                             .EnableIncludeSymbols()
-                                                             .SetOutputDirectory(
-                                                                 ArtifactsPkgDirectory
-                                                             )
-                                           ),
-                                           () => SrcProjectFrameworks.ForEach( f => CompressZip(
-                                               SrcProjectDirectory /
-                                               "bin" /
-                                               "Release" /
-                                               f, ArtifactsLibDirectory / f + ".zip",
-                                               compressionLevel: CompressionLevel
-                                               .SmallestSize,
-                                               fileMode: FileMode.Create
-                                           )
-                                           )
+    public Target Test => _ => _.DependsOn( BuildTestProject )
+                                .Executes(
+                                    () => DotNetTest(
+                                        settings => settings.SetProjectFile( TestProjectFilePath )
+                                                            .SetConfiguration( "Debug" )
+                                                            .SetLoggers( "console" )
+                                                            .SetVerbosity( DotNetVerbosity.Normal )
+                                                            .EnableNoBuild()
+                                    )
                                 );
 
-    public Target CI => _ => _
-                             .DependsOn( Build,Test,Pack )
-                             .OnlyWhenStatic(() => !IsLocalBuild)
-                             .Executes( () =>
-                                 {
-                                     IReadOnlyCollection<AbsolutePath> libArtifacts       = ArtifactsLibDirectory.GlobFiles("*.zip");
-                                     IReadOnlyCollection<AbsolutePath> pkgArtifacts = ArtifactsPkgDirectory.GlobFiles("*.{nupkg,snupkg}");
+    public Target Pack => _ => _.DependsOn( Clean, BuildSrcProject )
+                                .Executes( /* Create a nuget package => artifacts/packages/ReflectionExtended(Version).(s)nupkg */
+                                    () => DotNetPack(
+                                        settings => settings.SetProject( SrcProjectFilePath )
+                                                            .SetConfiguration( "Release" )
+                                                            .EnableNoBuild()
+                                                            .SetOutputDirectory(
+                                                                ArtifactsPkgDirectory
+                                                            )
+                                    ),
+                                    /* Create zips for each target framework */
+                                    () => CompressZip(
+                                        SrcProjectDirectory / "bin" / "Release" / "netstandard2.0",
+                                        ArtifactsLibDirectory / "netstandard2.0.zip"
+                                    ),
+                                    () => CompressZip(
+                                        SrcProjectDirectory / "bin" / "Release" / "netstandard2.1",
+                                        ArtifactsLibDirectory / "netstandard2.1.zip"
+                                    ),
+                                    () => CompressZip(
+                                        SrcProjectDirectory / "bin" / "Release" / "net6.0",
+                                        ArtifactsLibDirectory / "net6.0.zip"
+                                    )
+                                );
 
-                                     /*Log.Information( "Lib artifacts: {@Libs}" ,libArtifacts.Select( p => p.ToString() ));
-                                     Log.Information( "Package artifacts: {@Pkgs}", pkgArtifacts
-                                                      .Select( p => p.ToString() )
-                                     );
-                                     */
+    public Target PushArtifacts => _ => _.OnlyWhenStatic( () => !IsLocalBuild )
+                                         .Executes(
+                                             () => ArtifactsPkgDirectory
+                                                   .GlobFiles( "*.{snupkg,nupkg}" )
+                                                   .ForEach(
+                                                       path => {
+                                                           Info(
+                                                               "Pushing AppVeyor NuGet artifact: {Name}",
+                                                               path.Name
+                                                           );
+                                                           AppVeyor.Instance.PushArtifact(
+                                                               path,
+                                                               path.Name
+                                                           );
+                                                       }
+                                                   ),
+                                             () => ArtifactsLibDirectory.GlobFiles( "*.zip" )
+                                             .ForEach(
+                                                 path => {
+                                                     Info(
+                                                         "Pushing AppVeyor Lib artifact: {Name}",
+                                                         path.Name
+                                                     );
+                                                     AppVeyor.Instance.PushArtifact(
+                                                         path,
+                                                         path.Name
+                                                     );
+                                                 }
+                                             )
+                                         );
 
-                                     libArtifacts.Concat(pkgArtifacts).ForEach(
-                                         path => AppVeyor.Instance.PushArtifact( path, path.Name )
-                                     );
-                                 }
-                             );
+    public Target PrintReleaseNotes => _ => _.Executes(
+        () => {
+            const string HeaderRegex      = @"(##\s+ReflectionExtended\s*[vV](\d+\.\d+(?:\.\d+)?))";
+            const string Version          = "1.0.0";
+            AbsolutePath          releaseNotesPath = RootDirectory / "RELEASE_NOTES.md";
 
-    /*public Target PrintVersion => _ => _.Executes( () =>
-    {
-        string releaseNotes = @"
-## v0.1.0
+            string fileText = System.IO.File.ReadAllText( releaseNotesPath );
 
-- Some fix
-- Some feature
+            MatchCollection headerMatches = Regex.Matches( fileText, HeaderRegex );
 
-## v0.2.0
+            Info( "Matches: {M}", headerMatches.Select( m => m.Value ).JoinCommaSpace() );
 
-- Some another cool feature
+            Match versionMatch = headerMatches.SingleOrDefault(
+                m => m.Groups[2].Value.EqualsOrdinalIgnoreCase( Version )
+            );
 
-";
+            if (versionMatch is null)
+            {
+                Error( "Not found header for version {Version}", Version );
+                return;
+            }
 
-        Regex noteHeaderRegex = new ( @"## (?:[v]\s*([^\s]+))(?:\r\n|\n|\r)" );
+            int spanStart = fileText.IndexOf( '\n', versionMatch.Index );
 
-        var headers = noteHeaderRegex.Matches( releaseNotes )
-                                     .Select( m => m.Index )
-                                     .OrderBy( i => i );
+            Match nextHeader = headerMatches.OrderBy( m => m.Index )
+                                            .FirstOrDefault( m => m.Index > versionMatch.Index );
 
-        
-    } );*/
+            int spanEnd = fileText.Length;
+
+            if (nextHeader is not null)
+            {
+                Info(
+                    "Next header is not null: {Index} || {Header}",
+                    nextHeader.Index,
+                    nextHeader.Value
+                );
+                spanEnd = nextHeader.Index;
+            }
+            else { Info( "Next header is null" ); }
+
+            Info( "SpanEnd is {Index}", spanEnd );
+
+            string notes = fileText[(spanStart + 1)..spanEnd].Trim();
+
+            Info( "ReleaseNotes: {Notes}", notes );
+        }
+    );
 
     public static int Main() => Execute<BuildConfiguration>();
 
-    string[] GetReleaseNotes(Commit[] commits)
+    static void Info(string template, params object[] args)
     {
-        return commits.Where( commit => !commit.MessageShort.Contains( "[skip rn]",
-                                                StringComparison.OrdinalIgnoreCase
-                                        ) &&
-                                        !commit.MessageShort.Contains( "[skip notes]",
-                                                StringComparison.OrdinalIgnoreCase
-                                        )
-                      )
-                      .Select( commit =>
-                               $"{commit.MessageShort} // {commit.Author.Name} at {commit.Author.When.ToString( "g" )}"
-                      )
-                      .ToArray();
+        if (IsLocalBuild) { Log.Information( template, args ); }
+        else { AppVeyor.Instance.WriteInformation( string.Format( template, args ) ); }
     }
-    
 
+    static void Warn(string template, params object[] args)
+    {
+        if (IsLocalBuild) { Log.Warning( template, args ); }
+        else { AppVeyor.Instance.WriteWarning( string.Format( template, args ) ); }
+    }
+
+    static void Error(string template, params object[] args)
+    {
+        if (IsLocalBuild) { Log.Error( template, args ); }
+        else { AppVeyor.Instance.WriteError( string.Format( template, args ) ); }
+    }
 }

@@ -14,6 +14,6 @@
     <PackageReference Include="coverlet.collector" Version="3.1.2" />
   </ItemGroup>
   <ItemGroup Label="Main project references">
-    <ProjectReference Include="..\..\src\ReflectionExtended\ReflectionExtended.csproj" />
+    <ProjectReference Include="$(MainProjectPath)" />
   </ItemGroup>
 </Project>

@@ -1,19 +1,12 @@
 image: Visual Studio 2022
 version: '#{build}'
 install:
-  - cmd: dotnet tool install -g Nuke.GlobalTool
+  - cmd: dotnet tool restore --verbosity normal
 build: false
 build_script:
-  - cmd: nuke ci --configuration Debug Release
+  - cmd: dotnet nuke -- build pack push-artifacts --configuration Release
 test: false
+test_script:
+  - cmd: dotnet nuke -- test --configuration Debug
 deploy: off
 
-# build_script:
-#   - ps: ./build.ps1 --target=ci --verbosity=verbose
-# environment:
-#   global:
-#     GIT_AUTHOR_NAME: 2chevskii
-#     GIT_AUTHOR_EMAIL:
-#       secure: b4TAg5BteaKCGgrG40xWAmDDPL3isCh+dqUjDV+kafQ=
-#     GITHUB_ACCESS_TOKEN:
-#       secure: P0AX0tDKPPPeGe5jsg+LRZvPN7N5sGEX2B3Jmqw5B8hTxiZS8L+S2upPMjOCS2cF
