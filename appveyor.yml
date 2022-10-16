@@ -19,10 +19,13 @@ install:
 before_build:
   - cmd: ./build.cmd init-version
 build_script:
-  - cmd: ./build.cmd build 
+  - cmd: ./build.cmd build
 after_build:
   - cmd: ./build.cmd pack
 test_script:
   - cmd: ./build.cmd test-ci
 after_test:
   - cmd: ./build.cmd upload-test-results
+environment:
+  GITHUB_TOKEN:
+    secure: KdtdLNX0QQvnhaEcRpI9todShbaCvDw8YQIVX5YrhlNwCapzYYpEM0LAh20he3OX
